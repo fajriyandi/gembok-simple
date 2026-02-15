@@ -1,0 +1,19 @@
+[2026-02-15 12:27:28] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.admin_users' doesn't exist
+[2026-02-15 12:27:37] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.admin_users' doesn't exist
+[2026-02-15 13:09:00] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 13:09:04] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 13:10:16] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 13:10:23] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 13:11:57] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 13:12:07] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 13:12:22] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 13:13:00] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 13:13:12] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 13:16:54] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 13:16:56] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 13:17:09] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 13:40:50] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 13:41:27] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 14:05:36] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 14:05:39] ERROR: MikroTik login failed: Authentication failed
+[2026-02-15 14:06:07] ERROR: MikroTik login failed: Authentication failed

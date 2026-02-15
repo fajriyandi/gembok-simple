@@ -1,0 +1,45 @@
+[2026-02-15 06:34:03] [admin] [::1] ADMIN_LOGIN - Username: admin
+[2026-02-15 13:04:48] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 13:04:53] [admin] [::1] MIKROTI_API - Profile response received: 0 bytes
+[2026-02-15 13:04:53] [admin] [::1] MIKROTI_API - Profiles found: 0
+[2026-02-15 13:05:18] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 13:05:23] [admin] [::1] MIKROTI_API - Profile response received: 0 bytes
+[2026-02-15 13:05:23] [admin] [::1] MIKROTI_API - Profiles found: 0
+[2026-02-15 13:12:22] [admin] [::1] DELETE_PACKAGE - ID: 1
+[2026-02-15 14:08:53] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 14:09:00] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 14:09:12] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 14:10:25] [guest] [unknown] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 14:12:12] [guest] [unknown] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 14:12:40] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 14:15:05] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 14:15:17] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 14:17:52] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 14:21:39] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 14:25:04] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 14:49:28] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 15:02:34] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 15:04:07] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 15:04:49] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 15:12:33] [admin] [::1] ADMIN_LOGOUT - Username: admin
+[2026-02-15 15:23:21] [admin] [::1] ADMIN_LOGIN - Username: admin
+[2026-02-15 15:23:31] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 15:25:17] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 15:27:27] [admin] [192.168.8.1] ADMIN_LOGIN - Username: admin
+[2026-02-15 15:34:06] [admin] [192.168.8.1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 15:34:24] [admin] [192.168.8.1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 15:39:26] [admin] [192.168.8.1] ADMIN_LOGOUT - Username: admin
+[2026-02-15 15:44:48] [admin] [::1] ADMIN_LOGOUT - Username: admin
+[2026-02-15 15:47:33] [admin] [::1] ADMIN_LOGIN - Username: admin
+[2026-02-15 15:48:02] [admin] [::1] ADMIN_LOGOUT - Username: admin
+[2026-02-15 15:50:27] [admin] [::1] ADMIN_LOGIN - Username: admin
+[2026-02-15 15:52:11] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 15:54:08] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 15:55:04] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 15:57:37] [admin] [192.168.8.1] ADMIN_LOGIN - Username: admin
+[2026-02-15 15:59:14] [admin] [192.168.8.1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 15:59:26] [admin] [192.168.8.1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 15:59:47] [admin] [192.168.8.1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 16:25:09] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 16:25:11] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles
+[2026-02-15 16:25:21] [admin] [::1] MIKROTI_API - Fetching PPPoE profiles

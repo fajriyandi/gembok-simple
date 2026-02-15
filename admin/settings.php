@@ -1,0 +1,433 @@
+<?php
+/**
+ * Admin Settings
+ */
+
+require_once '../includes/auth.php';
+requireAdminLogin();
+
+$pageTitle = 'Settings';
+
+// Get current settings
+$settings = [];
+$settingsData = fetchAll("SELECT * FROM settings");
+foreach ($settingsData as $s) {
+    $settings[$s['setting_key']] = $s['setting_value'];
+}
+
+// Helper function to get setting with fallback to config.php constant
+function getSettingValue($key, $default = '') {
+    global $settings;
+    
+    // First check database
+    if (isset($settings[$key]) && $settings[$key] !== '') {
+        return $settings[$key];
+    }
+    
+    // Fallback to config.php constant
+    if (defined($key)) {
+        return constant($key);
+    }
+    
+    return $default;
+}
+
+// Handle form submissions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['action'])) {
+        switch ($_POST['action']) {
+            case 'save_system':
+                $systemSettings = [
+                    'app_name' => sanitize($_POST['app_name']),
+                    'timezone' => sanitize($_POST['timezone']),
+                    'currency' => sanitize($_POST['currency']),
+                    'invoice_prefix' => sanitize($_POST['invoice_prefix']),
+                    'invoice_start' => (int)$_POST['invoice_start']
+                ];
+                
+                foreach ($systemSettings as $key => $value) {
+                    $existing = fetchOne("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+                    if ($existing) {
+                        update('settings', ['setting_value' => $value], 'setting_key = ?', [$key]);
+                    } else {
+                        insert('settings', ['setting_key' => $key, 'setting_value' => $value]);
+                    }
+                }
+                
+                setFlash('success', 'Pengaturan sistem berhasil disimpan');
+                redirect('settings.php');
+                break;
+                
+            case 'save_mikrotik':
+                $mikrotikSettings = [
+                    'MIKROTIK_HOST' => sanitize($_POST['mikrotik_host']),
+                    'MIKROTIK_USER' => sanitize($_POST['mikrotik_user']),
+                    'MIKROTIK_PASS' => sanitize($_POST['mikrotik_pass']),
+                    'MIKROTIK_PORT' => (int)$_POST['mikrotik_port']
+                ];
+                
+                foreach ($mikrotikSettings as $key => $value) {
+                    $existing = fetchOne("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+                    if ($existing) {
+                        update('settings', ['setting_value' => $value], 'setting_key = ?', [$key]);
+                    } else {
+                        insert('settings', ['setting_key' => $key, 'setting_value' => $value]);
+                    }
+                }
+                
+                setFlash('success', 'Pengaturan MikroTik berhasil disimpan');
+                redirect('settings.php');
+                break;
+                
+            case 'save_genieacs':
+                $genieacsSettings = [
+                    'GENIEACS_URL' => sanitize($_POST['genieacs_url']),
+                    'GENIEACS_USERNAME' => sanitize($_POST['genieacs_username']),
+                    'GENIEACS_PASSWORD' => sanitize($_POST['genieacs_password'])
+                ];
+                
+                foreach ($genieacsSettings as $key => $value) {
+                    $existing = fetchOne("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+                    if ($existing) {
+                        update('settings', ['setting_value' => $value], 'setting_key = ?', [$key]);
+                    } else {
+                        insert('settings', ['setting_key' => $key, 'setting_value' => $value]);
+                    }
+                }
+                
+                setFlash('success', 'Pengaturan GenieACS berhasil disimpan');
+                redirect('settings.php');
+                break;
+                
+            case 'save_integrations':
+                $integrationSettings = [
+                    'DEFAULT_WHATSAPP_GATEWAY' => sanitize($_POST['default_whatsapp_gateway']),
+                    'FONNTE_API_TOKEN' => sanitize($_POST['fonnte_api_token']),
+                    'WABLAS_API_TOKEN' => sanitize($_POST['wablas_api_token']),
+                    'MPWA_API_KEY' => sanitize($_POST['mpwa_api_key']),
+                    'TRIPAY_API_KEY' => sanitize($_POST['tripay_api_key']),
+                    'TRIPAY_PRIVATE_KEY' => sanitize($_POST['tripay_private_key']),
+                    'TRIPAY_MERCHANT_CODE' => sanitize($_POST['tripay_merchant_code']),
+                    'MIDTRANS_API_KEY' => sanitize($_POST['midtrans_api_key']),
+                    'MIDTRANS_MERCHANT_CODE' => sanitize($_POST['midtrans_merchant_code']),
+                    'DEFAULT_PAYMENT_GATEWAY' => sanitize($_POST['default_payment_gateway']),
+                    'TELEGRAM_BOT_TOKEN' => sanitize($_POST['telegram_token'])
+                ];
+                
+                foreach ($integrationSettings as $key => $value) {
+                    $existing = fetchOne("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+                    if ($existing) {
+                        update('settings', ['setting_value' => $value], 'setting_key = ?', [$key]);
+                    } else {
+                        insert('settings', ['setting_key' => $key, 'setting_value' => $value]);
+                    }
+                }
+                
+                setFlash('success', 'Pengaturan integrasi berhasil disimpan');
+                redirect('settings.php');
+                break;
+                
+            case 'change_password':
+                $currentPassword = $_POST['current_password'];
+                $newPassword = $_POST['new_password'];
+                $confirmPassword = $_POST['confirm_password'];
+                
+                $admin = getCurrentAdmin();
+                
+                if (!password_verify($currentPassword, $admin['password'])) {
+                    setFlash('error', 'Password saat ini salah');
+                    redirect('settings.php');
+                }
+                
+                if ($newPassword !== $confirmPassword) {
+                    setFlash('error', 'Password baru tidak sama');
+                    redirect('settings.php');
+                }
+                
+                if (strlen($newPassword) < 6) {
+                    setFlash('error', 'Password minimal 6 karakter');
+                    redirect('settings.php');
+                }
+                
+                if (updateAdminPassword($admin['id'], $newPassword)) {
+                    setFlash('success', 'Password berhasil diubah');
+                    logActivity('CHANGE_PASSWORD', 'Admin ID: ' . $admin['id']);
+                } else {
+                    setFlash('error', 'Gagal mengubah password');
+                }
+                redirect('settings.php');
+                break;
+        }
+    }
+}
+
+ob_start();
+?>
+
+<!-- System Settings -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-cog"></i> Pengaturan Sistem</h3>
+    </div>
+    
+    <form method="POST">
+        <input type="hidden" name="action" value="save_system">
+        
+        <div class="form-group">
+            <label class="form-label">Nama Aplikasi</label>
+            <input type="text" name="app_name" class="form-control" value="<?php echo htmlspecialchars($settings['app_name'] ?? 'GEMBOK'); ?>">
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Timezone</label>
+            <select name="timezone" class="form-control">
+                <option value="Asia/Jakarta" <?php echo ($settings['timezone'] ?? '') === 'Asia/Jakarta' ? 'selected' : ''; ?>>Asia/Jakarta (WIB)</option>
+                <option value="Asia/Makassar" <?php echo ($settings['timezone'] ?? '') === 'Asia/Makassar' ? 'selected' : ''; ?>>Asia/Makassar (WITA)</option>
+                <option value="Asia/Jayapura" <?php echo ($settings['timezone'] ?? '') === 'Asia/Jayapura' ? 'selected' : ''; ?>>Asia/Jayapura (WIT)</option>
+                <option value="Asia/Pontianak" <?php echo ($settings['timezone'] ?? '') === 'Asia/Pontianak' ? 'selected' : ''; ?>>Asia/Pontianak (WIB)</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Mata Uang</label>
+            <select name="currency" class="form-control">
+                <option value="IDR" <?php echo ($settings['currency'] ?? '') === 'IDR' ? 'selected' : ''; ?>>IDR - Rupiah</option>
+                <option value="USD" <?php echo ($settings['currency'] ?? '') === 'USD' ? 'selected' : ''; ?>>USD - Dollar</option>
+            </select>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label class="form-label">Invoice Prefix</label>
+                <input type="text" name="invoice_prefix" class="form-control" value="<?php echo htmlspecialchars($settings['invoice_prefix'] ?? 'INV'); ?>">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Invoice Start Number</label>
+                <input type="number" name="invoice_start" class="form-control" value="<?php echo (int)($settings['invoice_start'] ?? 1); ?>">
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Simpan
+        </button>
+    </form>
+</div>
+
+<!-- MikroTik Settings -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-network-wired"></i> Pengaturan MikroTik</h3>
+    </div>
+    
+    <form method="POST">
+        <input type="hidden" name="action" value="save_mikrotik">
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label class="form-label">MikroTik IP Address</label>
+                <input type="text" name="mikrotik_host" class="form-control" value="<?php echo htmlspecialchars(getSettingValue('MIKROTIK_HOST')); ?>" placeholder="192.168.1.1">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" name="mikrotik_user" class="form-control" value="<?php echo htmlspecialchars(getSettingValue('MIKROTIK_USER')); ?>" placeholder="admin">
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" name="mikrotik_pass" class="form-control" value="<?php echo htmlspecialchars(getSettingValue('MIKROTIK_PASS')); ?>" placeholder="Masukkan password">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">API Port</label>
+                <input type="number" name="mikrotik_port" class="form-control" value="<?php echo (int)getSettingValue('MIKROTIK_PORT', 8728); ?>">
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Simpan
+        </button>
+    </form>
+</div>
+
+<!-- GenieACS Settings -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-server"></i> Pengaturan GenieACS</h3>
+    </div>
+    
+    <form method="POST">
+        <input type="hidden" name="action" value="save_genieacs">
+        
+        <div class="form-group">
+            <label class="form-label">GenieACS URL</label>
+            <input type="text" name="genieacs_url" class="form-control" value="<?php echo htmlspecialchars(getSettingValue('GENIEACS_URL')); ?>" placeholder="http://192.168.1.1:7557">
+            <small style="color: var(--text-muted);">URL lengkap termasuk port (default: 7557)</small>
+            <?php if (defined('GENIEACS_URL') && GENIEACS_URL && !isset($settings['GENIEACS_URL'])): ?>
+                <small style="color: var(--neon-cyan);"><i class="fas fa-info-circle"></i> Nilai dari config.php (belum disimpan di database)</small>
+            <?php endif; ?>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label class="form-label">Username (Opsional)</label>
+                <input type="text" name="genieacs_username" class="form-control" value="<?php echo htmlspecialchars(getSettingValue('GENIEACS_USERNAME')); ?>" placeholder="Username GenieACS">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Password (Opsional)</label>
+                <input type="password" name="genieacs_password" class="form-control" value="<?php echo htmlspecialchars(getSettingValue('GENIEACS_PASSWORD')); ?>" placeholder="Password GenieACS">
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Simpan
+        </button>
+    </form>
+</div>
+
+<!-- Integration Settings -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-plug"></i> Integrasi & API</h3>
+    </div>
+    
+    <form method="POST">
+        <input type="hidden" name="action" value="save_integrations">
+        
+        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">WhatsApp Gateway</h4>
+        
+        <div class="form-group">
+            <label class="form-label">WhatsApp Gateway Default</label>
+            <select name="default_whatsapp_gateway" class="form-control">
+                <option value="fonnte" <?php echo ($settings['DEFAULT_WHATSAPP_GATEWAY'] ?? '') === 'fonnte' ? 'selected' : ''; ?>>Fonnte</option>
+                <option value="wablas" <?php echo ($settings['DEFAULT_WHATSAPP_GATEWAY'] ?? '') === 'wablas' ? 'selected' : ''; ?>>Wablas</option>
+                <option value="mpwa" <?php echo ($settings['DEFAULT_WHATSAPP_GATEWAY'] ?? '') === 'mpwa' ? 'selected' : ''; ?>>MPWA</option>
+            </select>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label class="form-label">Fonnte API Token</label>
+                <input type="password" name="fonnte_api_token" class="form-control" value="<?php echo htmlspecialchars($settings['FONNTE_API_TOKEN'] ?? ''); ?>" placeholder="Masukkan API Token Fonnte">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Wablas API Token</label>
+                <input type="password" name="wablas_api_token" class="form-control" value="<?php echo htmlspecialchars($settings['WABLAS_API_TOKEN'] ?? ''); ?>" placeholder="Masukkan API Token Wablas">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">MPWA API Key</label>
+            <input type="password" name="mpwa_api_key" class="form-control" value="<?php echo htmlspecialchars($settings['MPWA_API_KEY'] ?? ''); ?>" placeholder="Masukkan API Key MPWA">
+        </div>
+        
+        <hr style="margin: 30px 0; border-color: var(--border-color);">
+        
+        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">Payment Gateway (Tripay)</h4>
+        
+        <div class="form-group">
+            <label class="form-label">Tripay API Key</label>
+            <input type="text" name="tripay_api_key" class="form-control" value="<?php echo htmlspecialchars($settings['TRIPAY_API_KEY'] ?? ''); ?>" placeholder="Masukkan API Key Tripay">
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label class="form-label">Tripay Private Key</label>
+                <input type="password" name="tripay_private_key" class="form-control" value="<?php echo htmlspecialchars($settings['TRIPAY_PRIVATE_KEY'] ?? ''); ?>" placeholder="Masukkan Private Key">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Tripay Merchant Code</label>
+                <input type="text" name="tripay_merchant_code" class="form-control" value="<?php echo htmlspecialchars($settings['TRIPAY_MERCHANT_CODE'] ?? ''); ?>" placeholder="Masukkan Merchant Code">
+            </div>
+        </div>
+        
+        <hr style="margin: 30px 0; border-color: var(--border-color);">
+        
+        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">Payment Gateway (Midtrans)</h4>
+        
+        <div class="form-group">
+            <label class="form-label">Midtrans API Key</label>
+            <input type="text" name="midtrans_api_key" class="form-control" value="<?php echo htmlspecialchars($settings['MIDTRANS_API_KEY'] ?? ''); ?>" placeholder="Masukkan API Key Midtrans">
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Midtrans Merchant Code</label>
+            <input type="text" name="midtrans_merchant_code" class="form-control" value="<?php echo htmlspecialchars($settings['MIDTRANS_MERCHANT_CODE'] ?? ''); ?>" placeholder="Masukkan Merchant Code">
+        </div>
+        
+        <hr style="margin: 30px 0; border-color: var(--border-color);">
+        
+        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">Pengaturan Pembayaran</h4>
+        
+        <div class="form-group">
+            <label class="form-label">Payment Gateway Default</label>
+            <select name="default_payment_gateway" class="form-control">
+                <option value="tripay" <?php echo ($settings['DEFAULT_PAYMENT_GATEWAY'] ?? '') === 'tripay' ? 'selected' : ''; ?>>Tripay</option>
+                <option value="midtrans" <?php echo ($settings['DEFAULT_PAYMENT_GATEWAY'] ?? '') === 'midtrans' ? 'selected' : ''; ?>>Midtrans</option>
+            </select>
+        </div>
+        
+        <hr style="margin: 30px 0; border-color: var(--border-color);">
+        
+        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">Telegram Bot</h4>
+        
+        <div class="form-group">
+            <label class="form-label">Telegram Bot Token</label>
+            <input type="text" name="telegram_token" class="form-control" value="<?php echo htmlspecialchars($settings['TELEGRAM_BOT_TOKEN'] ?? ''); ?>" placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
+        </div>
+        
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Simpan
+        </button>
+    </form>
+</div>
+
+<!-- Change Password -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-key"></i> Ganti Password Admin</h3>
+    </div>
+    
+    <form method="POST">
+        <input type="hidden" name="action" value="change_password">
+        
+        <div class="form-group">
+            <label class="form-label">Password Saat Ini</label>
+            <input type="password" name="current_password" class="form-control" placeholder="•••••••••" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Password Baru</label>
+            <input type="password" name="new_password" class="form-control" placeholder="Minimal 6 karakter" required minlength="6">
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Konfirmasi Password Baru</label>
+            <input type="password" name="confirm_password" class="form-control" placeholder="Ketik ulang password baru" required minlength="6">
+        </div>
+        
+        <button type="submit" class="btn btn-warning">
+            <i class="fas fa-key"></i> Ubah Password
+        </button>
+    </form>
+</div>
+
+<script>
+document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+        const btn = this.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+    });
+});
+</script>
+
+<?php
+$content = ob_get_clean();
+require_once '../includes/layout.php';
