@@ -17,63 +17,86 @@ if (session_status() === PHP_SESSION_NONE) {
 // Get page title
 $pageTitle = $pageTitle ?? APP_NAME;
 $pageDescription = $pageDescription ?? '';
+
+// Phase 3: Multi-router support
+$currentRouter = getMikrotikSettings();
+$allRouters = getAllRouters();
+
+// Handle global router switching via GET (optional but convenient)
+if (isset($_GET['switch_router'])) {
+    $swId = (int)$_GET['switch_router'];
+    $_SESSION['active_router_id'] = $swId;
+    $currentUrl = strtok($_SERVER["REQUEST_URI"], '?');
+    header("Location: " . $currentUrl);
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle); ?> - <?php echo APP_NAME; ?></title>
     <meta name="description" content="<?php echo htmlspecialchars($pageDescription); ?>">
-    
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- DataTables CSS -->
     <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" type="text/css">
-    
+
     <style>
         :root {
-            /* Dark Neon Theme */
+            /* Dark Neon Theme (Default) */
             --bg-primary: #0a0a0f;
             --bg-secondary: #12121a;
             --bg-card: rgba(20, 20, 35, 0.8);
             --bg-sidebar: #0d0d15;
-            
-            /* Neon Colors */
             --neon-cyan: #00f5ff;
             --neon-purple: #bf00ff;
             --neon-pink: #ff00aa;
             --neon-green: #00ff88;
             --neon-orange: #ff6b35;
             --neon-red: #ff4757;
-            
-            /* Gradients */
             --gradient-primary: linear-gradient(135deg, #00f5ff 0%, #bf00ff 100%);
             --gradient-success: linear-gradient(135deg, #00ff88 0%, #00d4aa 100%);
             --gradient-warning: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
-            
-            /* Text */
             --text-primary: #ffffff;
             --text-secondary: rgba(255, 255, 255, 0.6);
             --text-muted: rgba(255, 255, 255, 0.4);
-            
-            /* Border */
             --border-color: rgba(255, 255, 255, 0.08);
             --border-glow: rgba(0, 245, 255, 0.3);
-            
-            /* Shadows */
             --shadow-neon: 0 0 20px rgba(0, 245, 255, 0.3);
             --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
-            
-            /* Sidebar */
             --sidebar-width: 260px;
             --sidebar-collapsed: 70px;
+            --bg-input: rgba(255, 255, 255, 0.05);
+            --bg-submenu: rgba(0, 0, 0, 0.2);
+        }
+
+        body.light-theme {
+            --bg-primary: #f0f2f5;
+            --bg-secondary: #ffffff;
+            --bg-card: rgba(255, 255, 255, 0.9);
+            --bg-sidebar: #ffffff;
+            --neon-cyan: #007bff;
+            --neon-purple: #6f42c1;
+            --text-primary: #1a1a1b;
+            --text-secondary: #4a4a4b;
+            --text-muted: #6a6a6b;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --border-glow: rgba(0, 123, 255, 0.2);
+            --shadow-neon: 0 4px 12px rgba(0, 123, 255, 0.1);
+            --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.05);
+            --bg-input: #ffffff;
+            --bg-submenu: #f8f9fa;
         }
 
         * {
@@ -150,7 +173,8 @@ $pageDescription = $pageDescription ?? '';
             border-left: 3px solid transparent;
         }
 
-        .menu-item:hover, .menu-item.active {
+        .menu-item:hover,
+        .menu-item.active {
             background: rgba(0, 245, 255, 0.1);
             color: var(--neon-cyan);
             border-left-color: var(--neon-cyan);
@@ -190,7 +214,7 @@ $pageDescription = $pageDescription ?? '';
             gap: 10px;
             align-items: center;
         }
-        
+
         .menu-toggle {
             display: none;
             background: none;
@@ -224,26 +248,29 @@ $pageDescription = $pageDescription ?? '';
             font-weight: 600;
             color: var(--neon-cyan);
         }
-        
+
         @media (max-width: 480px) {
             .card-header {
                 flex-direction: column !important;
                 align-items: flex-start !important;
                 gap: 10px !important;
             }
-            
+
             .card-header input[type="text"] {
                 width: 100% !important;
             }
         }
-        
+
         /* Responsive grids */
-        [style*="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))"] {
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 15px;
+            }
         }
-        
+
         @media (max-width: 480px) {
-            [style*="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))"] {
+            .stats-grid {
                 grid-template-columns: 1fr !important;
             }
         }
@@ -255,42 +282,42 @@ $pageDescription = $pageDescription ?? '';
             gap: 20px;
             margin-bottom: 30px;
         }
-        
+
         @media (max-width: 768px) {
             .stats-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                 gap: 15px;
             }
-            
+
             .stat-card {
                 flex-direction: column;
                 text-align: center;
                 align-items: center;
             }
-            
+
             .stat-info h3 {
                 font-size: 1.5rem;
             }
-                    
+
             /* Chart Containers */
             #charts-container {
                 display: grid !important;
                 grid-template-columns: 1fr !important;
             }
-                    
+
             @media (min-width: 769px) {
                 #charts-container {
                     grid-template-columns: 1fr 1fr !important;
                 }
             }
-                    
+
             /* Quick Actions Grid */
             [style*="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))"] {
                 display: grid !important;
                 grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
                 gap: 15px !important;
             }
-                    
+
             @media (max-width: 480px) {
                 [style*="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))"] {
                     grid-template-columns: 1fr !important;
@@ -324,12 +351,35 @@ $pageDescription = $pageDescription ?? '';
             font-size: 1.5rem;
         }
 
-        .stat-icon.cyan { background: rgba(0, 245, 255, 0.2); color: var(--neon-cyan); }
-        .stat-icon.purple { background: rgba(191, 0, 255, 0.2); color: var(--neon-purple); }
-        .stat-icon.green { background: rgba(0, 255, 136, 0.2); color: var(--neon-green); }
-        .stat-icon.orange { background: rgba(255, 107, 53, 0.2); color: var(--neon-orange); }
-        .stat-icon.red { background: rgba(255, 71, 87, 0.2); color: var(--neon-red); }
-        .stat-icon.yellow { background: rgba(255, 235, 59, 0.2); color: #ffeb3b; }
+        .stat-icon.cyan {
+            background: rgba(0, 245, 255, 0.2);
+            color: var(--neon-cyan);
+        }
+
+        .stat-icon.purple {
+            background: rgba(191, 0, 255, 0.2);
+            color: var(--neon-purple);
+        }
+
+        .stat-icon.green {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--neon-green);
+        }
+
+        .stat-icon.orange {
+            background: rgba(255, 107, 53, 0.2);
+            color: var(--neon-orange);
+        }
+
+        .stat-icon.red {
+            background: rgba(255, 71, 87, 0.2);
+            color: var(--neon-red);
+        }
+
+        .stat-icon.yellow {
+            background: rgba(255, 235, 59, 0.2);
+            color: #ffeb3b;
+        }
 
         .stat-info h3 {
             font-size: 1.8rem;
@@ -407,7 +457,7 @@ $pageDescription = $pageDescription ?? '';
         .form-control {
             width: 100%;
             padding: 12px;
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--bg-input);
             border: 1px solid var(--border-color);
             border-radius: 8px;
             color: var(--text-primary);
@@ -418,7 +468,12 @@ $pageDescription = $pageDescription ?? '';
         .form-control:focus {
             outline: none;
             border-color: var(--neon-cyan);
-            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 2px var(--border-glow);
+        }
+
+        select option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
         }
 
         /* Tables */
@@ -448,54 +503,72 @@ $pageDescription = $pageDescription ?? '';
         .data-table tbody tr:hover {
             background: rgba(255, 255, 255, 0.02);
         }
-        
+
         /* Responsive table for mobile */
         @media (max-width: 768px) {
-            .data-table {
-                display: block;
+        /* Responsive table for mobile */
+        @media (max-width: 768px) {
+            .table-responsive {
+                width: 100%;
                 overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
-            
-            .data-table, 
-            .data-table thead, 
-            .data-table tbody, 
-            .data-table th, 
-            .data-table td, 
+            .data-table {
+                min-width: 600px;
+            }
+        }
+
+        @media (max-width: 580px) {
+            .data-table,
+            .data-table thead,
+            .data-table tbody,
+            .data-table th,
+            .data-table td,
             .data-table tr {
                 display: block !important;
+                min-width: auto !important;
             }
-            
+
             .data-table thead tr {
                 position: absolute;
                 top: -9999px;
                 left: -9999px;
             }
-            
+
             .data-table tr {
                 border: 1px solid var(--border-color);
                 margin-bottom: 10px;
                 padding: 10px;
                 border-radius: 8px;
                 position: relative;
+                background: var(--bg-card);
             }
-            
+
             .data-table td {
                 border: none;
                 position: relative;
-                padding-left: calc(50% + 10px) !important;
+                padding-left: 45% !important;
                 text-align: right;
                 min-height: 40px;
+                border-bottom: 1px solid var(--border-color);
             }
-            
+
+            .data-table td:last-child {
+                border-bottom: none;
+            }
+
             .data-table td:before {
-                content: attr(data-label) ": ";
+                content: attr(data-label);
                 position: absolute;
                 left: 10px;
-                width: calc(50% - 10px);
+                width: 40%;
                 text-align: left;
                 font-weight: 600;
                 color: var(--text-secondary);
                 top: 12px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
         }
 
@@ -632,11 +705,6 @@ $pageDescription = $pageDescription ?? '';
             }
         }
 
-        @media (max-width: 480px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
             .header-title h1 {
                 font-size: 1.1rem;
             }
@@ -650,80 +718,190 @@ $pageDescription = $pageDescription ?? '';
                 align-items: stretch;
             }
         }
+
+        /* Improved Mobile Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        .sidebar-overlay.active { display: block; }
+
+        .theme-toggle-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 15px;
+        }
+        .theme-toggle-btn:hover {
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
     </style>
+    <script>
+        // Apply theme immediately to prevent flash
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.add('light-theme');
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.classList.add('light-theme');
+            });
+        }
+    </script>
 </head>
+
 <body>
     <?php if (isAdminLoggedIn()): ?>
+        <!-- Sidebar Overlay for mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
         <!-- Admin Sidebar -->
-        <div class="sidebar">
+        <div class="sidebar" id="mainSidebar">
             <div class="sidebar-header">
                 <i class="fas fa-network-wired" style="font-size: 1.5rem; color: var(--neon-cyan);"></i>
                 <span class="sidebar-logo">GEMBOK</span>
             </div>
-            
+
             <div class="sidebar-nav">
-                <a href="<?php echo APP_URL; ?>/admin/dashboard.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'dashboard.php' ? 'active' : ''; ?>">
+                <a href="<?php echo APP_URL; ?>/admin/dashboard.php"
+                    class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'dashboard.php' ? 'active' : ''; ?>">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
-                
-                <a href="<?php echo APP_URL; ?>/admin/customers.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'customers.php' ? 'active' : ''; ?>">
+
+                <a href="<?php echo APP_URL; ?>/admin/customers.php"
+                    class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'customers.php' ? 'active' : ''; ?>">
                     <i class="fas fa-users"></i>
                     <span>Pelanggan</span>
                 </a>
-                
-                <a href="<?php echo APP_URL; ?>/admin/packages.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'packages.php' ? 'active' : ''; ?>">
-                    <i class="fas fa-box"></i>
-                    <span>Paket</span>
-                </a>
-                
-                <a href="<?php echo APP_URL; ?>/admin/invoices.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'invoices.php' ? 'active' : ''; ?>">
+
+                <div class="menu-item <?php echo (basename($_SERVER['PHP_SELF']) === 'mikrotik.php' || basename($_SERVER['PHP_SELF']) === 'packages.php') ? 'active' : ''; ?>"
+                    onclick="toggleSubmenu(this)">
+                    <i class="fas fa-network-wired"></i>
+                    <span>PPPOE</span>
+                    <i class="fas fa-chevron-down" style="margin-left: auto; font-size: 0.7rem;"></i>
+                </div>
+                <div class="submenu"
+                    style="<?php echo (basename($_SERVER['PHP_SELF']) === 'mikrotik.php' || basename($_SERVER['PHP_SELF']) === 'packages.php') ? 'display: block;' : 'display: none;'; ?> background: var(--bg-submenu);">
+                    <a href="<?php echo APP_URL; ?>/admin/mikrotik.php"
+                        class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'mikrotik.php' ? 'active' : ''; ?>"
+                        style="padding-left: 45px; font-size: 0.9rem;">
+                        <i class="fas fa-server"></i> <span>Data MikroTik</span>
+                    </a>
+                    <a href="<?php echo APP_URL; ?>/admin/packages.php"
+                        class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'packages.php' ? 'active' : ''; ?>"
+                        style="padding-left: 45px; font-size: 0.9rem;">
+                        <i class="fas fa-box"></i> <span>Paket Layanan</span>
+                    </a>
+                </div>
+
+                <a href="<?php echo APP_URL; ?>/admin/invoices.php"
+                    class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'invoices.php' ? 'active' : ''; ?>">
                     <i class="fas fa-file-invoice"></i>
                     <span>Invoice</span>
                 </a>
-                
-                <a href="<?php echo APP_URL; ?>/admin/mikrotik.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'mikrotik.php' ? 'active' : ''; ?>">
-                    <i class="fas fa-network-wired"></i>
-                    <span>PPPoE</span>
-                </a>
-                
-                <a href="<?php echo APP_URL; ?>/admin/hotspot.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'hotspot.php' ? 'active' : ''; ?>">
+
+                <div class="menu-item <?php echo strpos(basename($_SERVER['PHP_SELF']), 'hotspot') !== false ? 'active' : ''; ?>"
+                    onclick="toggleSubmenu(this)">
                     <i class="fas fa-wifi"></i>
                     <span>Hotspot</span>
-                </a>
-                
-                <a href="<?php echo APP_URL; ?>/admin/genieacs.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'genieacs.php' ? 'active' : ''; ?>">
+                    <i class="fas fa-chevron-down" style="margin-left: auto; font-size: 0.7rem;"></i>
+                </div>
+                <div class="submenu"
+                    style="<?php echo strpos(basename($_SERVER['PHP_SELF']), 'hotspot') !== false ? 'display: block;' : 'display: none;'; ?> background: var(--bg-submenu);">
+                    <a href="<?php echo APP_URL; ?>/admin/hotspot-user.php"
+                        class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'hotspot-user.php' ? 'active' : ''; ?>"
+                        style="padding-left: 45px; font-size: 0.9rem;">
+                        <i class="fas fa-users"></i> <span>Hotspot Users</span>
+                    </a>
+                    <a href="<?php echo APP_URL; ?>/admin/hotspot-active.php"
+                        class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'hotspot-active.php' ? 'active' : ''; ?>"
+                        style="padding-left: 45px; font-size: 0.9rem;">
+                        <i class="fas fa-signal"></i> <span>Hotspot Active</span>
+                    </a>
+                    <a href="<?php echo APP_URL; ?>/admin/hotspot-profile.php"
+                        class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'hotspot-profile.php' ? 'active' : ''; ?>"
+                        style="padding-left: 45px; font-size: 0.9rem;">
+                        <i class="fas fa-id-card"></i> <span>Hotspot Profiles</span>
+                    </a>
+                    <a href="<?php echo APP_URL; ?>/admin/hotspot-cookies.php"
+                        class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'hotspot-cookies.php' ? 'active' : ''; ?>"
+                        style="padding-left: 45px; font-size: 0.9rem;">
+                        <i class="fas fa-cookie-bite"></i> <span>Hotspot Cookies</span>
+                    </a>
+                    <a href="<?php echo APP_URL; ?>/admin/hotspot-scheduler.php"
+                        class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'hotspot-scheduler.php' ? 'active' : ''; ?>"
+                        style="padding-left: 45px; font-size: 0.9rem;">
+                        <i class="fas fa-clock"></i> <span>Schedulers</span>
+                    </a>
+                    <a href="<?php echo APP_URL; ?>/admin/sales-report.php"
+                        class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'sales-report.php' ? 'active' : ''; ?>"
+                        style="padding-left: 45px; font-size: 0.9rem;">
+                        <i class="fas fa-chart-line"></i> <span>Sales Report</span>
+                    </a>
+                    <a href="<?php echo APP_URL; ?>/admin/export-rsc.php"
+                        class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'export-rsc.php' ? 'active' : ''; ?>"
+                        style="padding-left: 45px; font-size: 0.9rem;">
+                        <i class="fas fa-file-export"></i> <span>Export RSC</span>
+                    </a>
+                </div>
+
+                <a href="<?php echo APP_URL; ?>/admin/genieacs.php"
+                    class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'genieacs.php' ? 'active' : ''; ?>">
                     <i class="fas fa-satellite-dish"></i>
                     <span>GenieACS</span>
                 </a>
-                
-                <a href="<?php echo APP_URL; ?>/admin/map.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'map.php' ? 'active' : ''; ?>">
+
+                <a href="<?php echo APP_URL; ?>/admin/map.php"
+                    class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'map.php' ? 'active' : ''; ?>">
                     <i class="fas fa-map-marked-alt"></i>
                     <span>Peta</span>
                 </a>
-                
-                <a href="<?php echo APP_URL; ?>/admin/voucher.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'voucher.php' ? 'active' : ''; ?>">
-                    <i class="fas fa-ticket-alt"></i>
-                    <span>Voucher</span>
+
+                <a href="<?php echo APP_URL; ?>/admin/voucher-editor.php"
+                    class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'voucher-editor.php' ? 'active' : ''; ?>">
+                    <i class="fas fa-magic"></i>
+                    <span>Template Voucher</span>
                 </a>
-                
-                <a href="<?php echo APP_URL; ?>/admin/trouble.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'trouble.php' ? 'active' : ''; ?>">
+
+                <a href="<?php echo APP_URL; ?>/admin/trouble.php"
+                    class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'trouble.php' ? 'active' : ''; ?>">
                     <i class="fas fa-exclamation-triangle"></i>
                     <span>Gangguan</span>
                 </a>
-                
-                <a href="<?php echo APP_URL; ?>/admin/settings.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'settings.php' ? 'active' : ''; ?>">
+
+                <a href="<?php echo APP_URL; ?>/admin/settings.php"
+                    class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'settings.php' ? 'active' : ''; ?>">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </a>
-                
-                <a href="<?php echo APP_URL; ?>/admin/update.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'update.php' ? 'active' : ''; ?>">
+
+                <a href="<?php echo APP_URL; ?>/admin/update.php"
+                    class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'update.php' ? 'active' : ''; ?>">
                     <i class="fas fa-sync-alt"></i>
                     <span>Update</span>
                 </a>
-                
+
+                <a href="<?php echo APP_URL; ?>/admin/routers.php"
+                    class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'routers.php' ? 'active' : ''; ?>">
+                    <i class="fas fa-server"></i>
+                    <span>Router Management</span>
+                </a>
+
                 <div style="margin-top: 20px; border-top: 1px solid var(--border-color);"></div>
-                
+
                 <a href="<?php echo APP_URL; ?>/admin/logout.php" class="menu-item">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
@@ -731,7 +909,7 @@ $pageDescription = $pageDescription ?? '';
             </div>
         </div>
     <?php endif; ?>
-    
+
     <!-- Main Content -->
     <div class="main-content">
         <?php if (isAdminLoggedIn()): ?>
@@ -740,17 +918,40 @@ $pageDescription = $pageDescription ?? '';
                     <h1><?php echo htmlspecialchars($pageTitle); ?></h1>
                 </div>
                 <div class="header-actions">
-                    <button class="menu-toggle" onclick="toggleSidebar()" style="display: none; background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.5rem;">
+                    <!-- Theme Toggle -->
+                    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
+                        <i class="fas fa-moon" id="themeIcon"></i>
+                    </button>
+
+                    <!-- Router Switcher -->
+                    <?php if (count($allRouters) > 1): ?>
+                    <div class="router-switcher" style="margin-right: 15px;">
+                        <select onchange="window.location.href='?switch_router=' + this.value" 
+                                style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--neon-cyan); padding: 5px 10px; border-radius: 6px; cursor: pointer;">
+                            <?php foreach ($allRouters as $r): ?>
+                                <option value="<?php echo $r['id']; ?>" <?php echo $currentRouter['id'] == $r['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($r['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <?php endif; ?>
+
+                    <button class="menu-toggle" onclick="toggleSidebar()"
+                        style="display: none; background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.5rem;">
                         <i class="fas fa-bars"></i>
                     </button>
                     <span style="color: var(--text-secondary);">
                         <i class="fas fa-user-circle"></i>
                         <?php echo htmlspecialchars(getCurrentAdmin()['username']); ?>
                     </span>
+                    <span class="badge badge-info" style="margin-left: 10px;">
+                        <i class="fas fa-server"></i> <?php echo htmlspecialchars($currentRouter['name'] ?? 'Default'); ?>
+                    </span>
                 </div>
             </div>
         <?php endif; ?>
-        
+
         <!-- Flash Messages -->
         <?php if (hasFlash('success')): ?>
             <div class="alert alert-success">
@@ -758,40 +959,75 @@ $pageDescription = $pageDescription ?? '';
                 <?php echo htmlspecialchars(getFlash('success')); ?>
             </div>
         <?php endif; ?>
-        
+
         <?php if (hasFlash('error')): ?>
             <div class="alert alert-error">
                 <i class="fas fa-exclamation-circle"></i>
                 <?php echo htmlspecialchars(getFlash('error')); ?>
             </div>
         <?php endif; ?>
-        
+
         <?php if (hasFlash('info')): ?>
             <div class="alert alert-info">
                 <i class="fas fa-info-circle"></i>
                 <?php echo htmlspecialchars(getFlash('info')); ?>
             </div>
         <?php endif; ?>
-        
+
         <!-- Page Content -->
         <?php echo $content; ?>
     </div>
-    
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.min.js"></script>
     <script>
         function toggleSidebar() {
-            document.querySelector('.sidebar').classList.toggle('active');
+            const sidebar = document.getElementById('mainSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
         }
-        
-        // Show menu toggle button on mobile
-        window.addEventListener('load', function() {
+
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+            const isLight = document.body.classList.contains('light-theme');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const icon = document.getElementById('themeIcon');
+            const isLight = document.body.classList.contains('light-theme');
+            icon.className = isLight ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        function toggleSubmenu(el) {
+            const submenu = el.nextElementSibling;
+            const icon = el.querySelector('.fa-chevron-down');
+            if (submenu.style.display === 'none') {
+                submenu.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                submenu.style.display = 'none';
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Apply saved theme
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-theme');
+            }
+            updateThemeIcon();
+            
+            // Show mobile menu toggle button
             const menuToggle = document.querySelector('.menu-toggle');
             if (window.innerWidth <= 768) {
                 menuToggle.style.display = 'block';
             }
-            
-            window.addEventListener('resize', function() {
+
+            window.addEventListener('resize', function () {
                 if (window.innerWidth <= 768) {
                     menuToggle.style.display = 'block';
                 } else {
@@ -802,4 +1038,5 @@ $pageDescription = $pageDescription ?? '';
         });
     </script>
 </body>
+
 </html>

@@ -5,20 +5,24 @@
 
 require_once '../includes/db.php';
 require_once '../includes/functions.php';
+require_once '../includes/payment.php';
 
 header('Content-Type: application/json');
+
+// Helper to get settings from database
+function getSetting($key, $default = '') {
+    if (defined($key)) {
+        return constant($key);
+    }
+    $row = fetchOne("SELECT setting_value FROM settings WHERE setting_key = ?", [$key]);
+    return $row ? $row['setting_value'] : $default;
+}
 
 try {
     // Get raw POST data
     $json = file_get_contents('php://input');
     
     logActivity('TELEGRAM_WEBHOOK', "Received webhook");
-    
-    // Validate token if configured
-    if (!empty(TELEGRAM_BOT_TOKEN)) {
-        // Telegram doesn't use signature validation
-        // Just log the webhook
-    }
     
     // Parse JSON data
     $data = json_decode($json, true);
@@ -158,15 +162,24 @@ function handlePayInvoice($chatId, $data) {
     $invoiceId = $data['invoice_id'] ?? '';
     
     // Get invoice details
-    $invoice = fetchOne("SELECT i.*, c.name as customer_name FROM invoices i LEFT JOIN customers c ON i.customer_id = c.id WHERE i.id = ?", [$invoiceId]);
+    $invoice = fetchOne("SELECT i.*, c.name as customer_name, c.phone as customer_phone FROM invoices i LEFT JOIN customers c ON i.customer_id = c.id WHERE i.id = ?", [$invoiceId]);
     
     if (!$invoice) {
         sendMessage($chatId, "❌ Invoice tidak ditemukan.");
         return;
     }
     
-    // Send payment link
-    $paymentLink = generatePaymentLink($invoice);
+    $gateway = getSetting('DEFAULT_PAYMENT_GATEWAY', 'tripay');
+    $payResult = generatePaymentLink(
+        $invoice['invoice_number'],
+        $invoice['amount'],
+        $invoice['customer_name'] ?? '-',
+        $invoice['customer_phone'] ?? '',
+        $invoice['due_date'],
+        $gateway
+    );
+    
+    $paymentLink = ($payResult['success'] ?? false) ? $payResult['link'] : 'Gateway error';
     
     $message = "💳 *Invoice #{$invoice['invoice_number']}*\n\n";
     $message .= "Pelanggan: {$invoice['customer_name']}\n";
@@ -180,9 +193,10 @@ function handlePayInvoice($chatId, $data) {
 
 function handleCheckStatus($chatId, $data) {
     $phone = $data['phone'] ?? '';
-    
+    $phone = preg_replace('/[^0-9]/', '', (string)$phone);
+
     // Get customer by phone
-    $customer = fetchOne("SELECT * FROM customers WHERE phone = ?", [$phone]);
+    $customer = fetchOne("SELECT * FROM customers WHERE phone LIKE ?", ["%{$phone}"]);
     
     if (!$customer) {
         sendMessage($chatId, "❌ Pelanggan tidak ditemukan dengan nomor HP tersebut.");
@@ -220,6 +234,9 @@ function handleHelp($chatId) {
         $message .= "/billing_isolir &lt;pppoe_username&gt; - Isolir pelanggan\n";
         $message .= "/billing_bukaisolir &lt;pppoe_username&gt; - Buka isolir pelanggan\n";
         $message .= "/billing_lunas &lt;no_invoice&gt; - Tandai invoice lunas\n";
+        $message .= "/invoice_create &lt;pppoe_username&gt; &lt;amount&gt; &lt;due_date&gt; [desc]\n";
+        $message .= "/invoice_edit &lt;invoice_number&gt; &lt;amount&gt; &lt;due_date&gt; &lt;status&gt;\n";
+        $message .= "/invoice_delete &lt;invoice_number&gt;\n";
         $message .= "/mt_setprofile &lt;pppoe_username&gt; &lt;profile&gt; - Ganti profile PPPoE\n";
         $message .= "/mt_resource - Cek resource MikroTik\n";
         $message .= "/mt_online - Cek user PPPoE online\n";
@@ -230,16 +247,16 @@ function handleHelp($chatId) {
         $message .= "/pppoe_del &lt;user&gt; - Hapus PPPoE\n";
         $message .= "/pppoe_disable &lt;user&gt; - Nonaktifkan PPPoE\n";
         $message .= "/pppoe_enable &lt;user&gt; - Aktifkan PPPoE\n";
+        $message .= "/pppoe_profile_list\n";
         $message .= "/hs_list - Daftar user Hotspot\n";
         $message .= "/hs_add &lt;user&gt; &lt;pass&gt; &lt;profile&gt; - Tambah Hotspot\n";
-        $message .= "/hs_edit &lt;user&gt; &lt;pass&gt; &lt;profile&gt; - Ubah Hotspot\n";
         $message .= "/hs_del &lt;user&gt; - Hapus Hotspot\n";
     }
     
     sendMessage($chatId, $message);
 }
 
-function handleRegularMessage($chatId, $message) {
+function handleRegularMessage($chatId, $text) {
     $message = "Terima kasih atas pesan Anda.\n\n";
     $message .= "Untuk menggunakan bot ini, silakan gunakan command yang tersedia.\n";
     $message .= "Ketik /help untuk melihat daftar command.";
@@ -263,18 +280,21 @@ function sendMessage($chatId, $text, $options = []) {
     
     if (!empty($options)) {
         $data = array_merge($data, $options);
+        if (isset($data['reply_markup']) && is_array($data['reply_markup'])) {
+            $data['reply_markup'] = json_encode($data['reply_markup']);
+        }
     }
     
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     
-    curl_exec($ch);
+    $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
     
     logActivity('TELEGRAM_SEND', "To: {$chatId}, Status code: {$httpCode}");
     
@@ -297,38 +317,23 @@ function editMessageText($chatId, $messageId, $text, $replyMarkup = null) {
     ];
     
     if ($replyMarkup !== null) {
-        $data['reply_markup'] = $replyMarkup;
+        $data['reply_markup'] = is_array($replyMarkup) ? json_encode($replyMarkup) : $replyMarkup;
     }
     
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     
-    curl_exec($ch);
+    $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
     
     logActivity('TELEGRAM_EDIT', "To: {$chatId}, Msg: {$messageId}, Status code: {$httpCode}");
     
     return $httpCode === 200;
-}
-
-function generatePaymentLink($invoice) {
-    // Generate Tripay payment link
-    if (empty(TRIPAY_API_KEY) || empty(TRIPAY_MERCHANT_CODE)) {
-        return 'Payment gateway not configured';
-    }
-    
-    // This is a placeholder - implement actual Tripay payment link generation
-    $amount = $invoice['amount'];
-    $merchantRef = $invoice['invoice_number'];
-    
-    $paymentLink = "https://tripay.co.id/checkout?merchant_code=" . TRIPAY_MERCHANT_CODE . "&amount={$amount}&merchant_ref={$merchantRef}";
-    
-    return $paymentLink;
 }
 
 function isAdminChat($chatId) {
@@ -392,6 +397,18 @@ function handleCommand($chatId, $text) {
             handleBillingLunas($chatId, $args);
             break;
             
+        case '/invoice_create':
+            handleInvoiceCreate($chatId, $args);
+            break;
+            
+        case '/invoice_edit':
+            handleInvoiceEdit($chatId, $args);
+            break;
+            
+        case '/invoice_delete':
+            handleInvoiceDelete($chatId, $args);
+            break;
+            
         case '/mt_resource':
             handleMikrotikResource($chatId);
             break;
@@ -432,16 +449,16 @@ function handleCommand($chatId, $text) {
             handlePppoeEnable($chatId, $args);
             break;
         
+        case '/pppoe_profile_list':
+            handlePppoeProfileList($chatId);
+            break;
+        
         case '/hs_list':
             handleHotspotList($chatId);
             break;
         
         case '/hs_add':
             handleHotspotAdd($chatId, $args);
-            break;
-        
-        case '/hs_edit':
-            handleHotspotEdit($chatId, $args);
             break;
         
         case '/hs_del':
@@ -495,86 +512,37 @@ function handleBillingMenu($chatId) {
 }
 
 function handleBillingHelpCek($chatId) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah billing hanya untuk admin.");
-        return;
-    }
-    
-    $message = "📄 Cek Tagihan Pelanggan\n\n";
-    $message .= "Gunakan perintah:\n";
-    $message .= "/billing_cek &lt;pppoe_username&gt;\n\n";
-    $message .= "Contoh:\n";
-    $message .= "/billing_cek pelanggan001";
-    
+    if (!isAdminChat($chatId)) return;
+    $message = "📄 Cek Tagihan Pelanggan\n\nGunakan perintah:\n/billing_cek &lt;pppoe_username&gt;\n\nContoh:\n/billing_cek pelanggan001";
     sendMessage($chatId, $message);
 }
 
 function handleBillingHelpIsolir($chatId) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah billing hanya untuk admin.");
-        return;
-    }
-    
-    $message = "🔒 Isolir Pelanggan\n\n";
-    $message .= "Gunakan perintah:\n";
-    $message .= "/billing_isolir &lt;pppoe_username&gt;\n\n";
-    $message .= "Contoh:\n";
-    $message .= "/billing_isolir pelanggan001";
-    
+    if (!isAdminChat($chatId)) return;
+    $message = "🔒 Isolir Pelanggan\n\nGunakan perintah:\n/billing_isolir &lt;pppoe_username&gt;\n\nContoh:\n/billing_isolir pelanggan001";
     sendMessage($chatId, $message);
 }
 
 function handleBillingHelpBukaIsolir($chatId) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah billing hanya untuk admin.");
-        return;
-    }
-    
-    $message = "🔓 Buka Isolir Pelanggan\n\n";
-    $message .= "Gunakan perintah:\n";
-    $message .= "/billing_bukaisolir &lt;pppoe_username&gt;\n\n";
-    $message .= "Contoh:\n";
-    $message .= "/billing_bukaisolir pelanggan001";
-    
+    if (!isAdminChat($chatId)) return;
+    $message = "🔓 Buka Isolir Pelanggan\n\nGunakan perintah:\n/billing_bukaisolir &lt;pppoe_username&gt;\n\nContoh:\n/billing_bukaisolir pelanggan001";
     sendMessage($chatId, $message);
 }
 
 function handleBillingHelpInvoice($chatId) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah billing hanya untuk admin.");
-        return;
-    }
-    
-    $message = "📜 Daftar Invoice Pelanggan\n\n";
-    $message .= "Gunakan perintah:\n";
-    $message .= "/billing_invoice &lt;pppoe_username&gt;\n\n";
-    $message .= "Contoh:\n";
-    $message .= "/billing_invoice pelanggan001";
-    
+    if (!isAdminChat($chatId)) return;
+    $message = "📜 Daftar Invoice Pelanggan\n\nGunakan perintah:\n/billing_invoice &lt;pppoe_username&gt;\n\nContoh:\n/billing_invoice pelanggan001";
     sendMessage($chatId, $message);
 }
 
 function handleBillingHelpLunas($chatId) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah billing hanya untuk admin.");
-        return;
-    }
-    
-    $message = "✅ Tandai Invoice Lunas\n\n";
-    $message .= "Gunakan perintah:\n";
-    $message .= "/billing_lunas &lt;no_invoice&gt;\n\n";
-    $message .= "Contoh:\n";
-    $message .= "/billing_lunas INV-2026-0001";
-    
+    if (!isAdminChat($chatId)) return;
+    $message = "✅ Tandai Invoice Lunas\n\nGunakan perintah:\n/billing_lunas &lt;no_invoice&gt;\n\nContoh:\n/billing_lunas INV-2026-0001";
     sendMessage($chatId, $message);
 }
 
 function handleBillingCheck($chatId, $args) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah billing hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $username = trim($args);
     if ($username === '') {
         sendMessage($chatId, "Format: /billing_cek &lt;pppoe_username&gt;");
@@ -582,25 +550,17 @@ function handleBillingCheck($chatId, $args) {
     }
     
     $customer = fetchOne("SELECT c.*, p.name AS package_name, p.price AS package_price FROM customers c LEFT JOIN packages p ON c.package_id = p.id WHERE c.pppoe_username = ?", [$username]);
-    
     if (!$customer) {
         sendMessage($chatId, "Pelanggan dengan PPPoE username {$username} tidak ditemukan.");
         return;
     }
     
     $invoice = fetchOne("SELECT * FROM invoices WHERE customer_id = ? ORDER BY due_date DESC LIMIT 1", [$customer['id']]);
-    
-    $message = "📄 Tagihan Pelanggan\n\n";
-    $message .= "Nama: {$customer['name']}\n";
-    $message .= "PPPoE: {$customer['pppoe_username']}\n";
-    $message .= "Paket: " . ($customer['package_name'] ?? '-') . "\n";
+    $message = "📄 Tagihan Pelanggan\n\nNama: {$customer['name']}\nPPPoE: {$customer['pppoe_username']}\nPaket: " . ($customer['package_name'] ?? '-') . "\n";
     
     if ($invoice) {
         $status = $invoice['status'] === 'paid' ? 'Lunas' : 'Belum Lunas';
-        $message .= "Invoice: {$invoice['invoice_number']}\n";
-        $message .= "Jumlah: " . formatCurrency($invoice['amount']) . "\n";
-        $message .= "Jatuh tempo: " . formatDate($invoice['due_date']) . "\n";
-        $message .= "Status: {$status}\n";
+        $message .= "Invoice: {$invoice['invoice_number']}\nJumlah: " . formatCurrency($invoice['amount']) . "\nJatuh tempo: " . formatDate($invoice['due_date']) . "\nStatus: {$status}\n";
     } else {
         $message .= "Belum ada invoice untuk pelanggan ini.\n";
     }
@@ -608,34 +568,17 @@ function handleBillingCheck($chatId, $args) {
     $options = [];
     if ($invoice) {
         $buttons = [];
-        $buttons[] = [
-            [
-                'text' => '📜 Daftar Invoice',
-                'callback_data' => 'action=billing_help_invoice'
-            ]
-        ];
+        $buttons[] = [['text' => '📜 Daftar Invoice', 'callback_data' => 'action=billing_help_invoice']];
         if ($invoice['status'] !== 'paid') {
-            $buttons[] = [
-                [
-                    'text' => '✅ Tandai Lunas',
-                    'callback_data' => 'action=billing_mark_paid&inv=' . urlencode($invoice['invoice_number'])
-                ]
-            ];
+            $buttons[] = [['text' => '✅ Tandai Lunas', 'callback_data' => 'action=billing_mark_paid&inv=' . urlencode($invoice['invoice_number'])]];
         }
-        $options['reply_markup'] = [
-            'inline_keyboard' => $buttons
-        ];
+        $options['reply_markup'] = ['inline_keyboard' => $buttons];
     }
-    
     sendMessage($chatId, $message, $options);
 }
 
 function handleBillingInvoice($chatId, $args) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah billing hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $username = trim($args);
     if ($username === '') {
         sendMessage($chatId, "Format: /billing_invoice &lt;pppoe_username&gt;");
@@ -643,36 +586,26 @@ function handleBillingInvoice($chatId, $args) {
     }
     
     $customer = fetchOne("SELECT * FROM customers WHERE pppoe_username = ?", [$username]);
-    
     if (!$customer) {
         sendMessage($chatId, "Pelanggan dengan PPPoE username {$username} tidak ditemukan.");
         return;
     }
     
     $invoices = fetchAll("SELECT * FROM invoices WHERE customer_id = ? ORDER BY created_at DESC LIMIT 5", [$customer['id']]);
-    
     if (empty($invoices)) {
         sendMessage($chatId, "Belum ada invoice untuk pelanggan {$customer['name']}.");
         return;
     }
     
     $message = "📜 Daftar Invoice {$customer['name']}\n\n";
-    $keyboard = [
-        'inline_keyboard' => []
-    ];
+    $keyboard = ['inline_keyboard' => []];
     
     foreach ($invoices as $inv) {
         $status = $inv['status'] === 'paid' ? 'Lunas' : 'Belum Lunas';
-        $message .= "#{$inv['invoice_number']} - " . formatCurrency($inv['amount']) . " - {$status}\n";
-        $message .= "Jatuh tempo: " . formatDate($inv['due_date']) . "\n\n";
+        $message .= "#{$inv['invoice_number']} - " . formatCurrency($inv['amount']) . " - {$status}\nJatuh tempo: " . formatDate($inv['due_date']) . "\n\n";
         
         if ($inv['status'] !== 'paid') {
-            $keyboard['inline_keyboard'][] = [
-                [
-                    'text' => "✅ {$inv['invoice_number']}",
-                    'callback_data' => 'action=billing_mark_paid&inv=' . urlencode($inv['invoice_number'])
-                ]
-            ];
+            $keyboard['inline_keyboard'][] = [['text' => "✅ {$inv['invoice_number']}", 'callback_data' => 'action=billing_mark_paid&inv=' . urlencode($inv['invoice_number'])]];
         }
     }
     
@@ -684,11 +617,7 @@ function handleBillingInvoice($chatId, $args) {
 }
 
 function handleBillingIsolir($chatId, $args) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah billing hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $username = trim($args);
     if ($username === '') {
         sendMessage($chatId, "Format: /billing_isolir &lt;pppoe_username&gt;");
@@ -696,7 +625,6 @@ function handleBillingIsolir($chatId, $args) {
     }
     
     $customer = fetchOne("SELECT * FROM customers WHERE pppoe_username = ?", [$username]);
-    
     if (!$customer) {
         sendMessage($chatId, "Pelanggan dengan PPPoE username {$username} tidak ditemukan.");
         return;
@@ -715,11 +643,7 @@ function handleBillingIsolir($chatId, $args) {
 }
 
 function handleBillingBukaIsolir($chatId, $args) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah billing hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $username = trim($args);
     if ($username === '') {
         sendMessage($chatId, "Format: /billing_bukaisolir &lt;pppoe_username&gt;");
@@ -727,7 +651,6 @@ function handleBillingBukaIsolir($chatId, $args) {
     }
     
     $customer = fetchOne("SELECT * FROM customers WHERE pppoe_username = ?", [$username]);
-    
     if (!$customer) {
         sendMessage($chatId, "Pelanggan dengan PPPoE username {$username} tidak ditemukan.");
         return;
@@ -746,11 +669,7 @@ function handleBillingBukaIsolir($chatId, $args) {
 }
 
 function handleBillingLunas($chatId, $args, $silent = false) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah billing hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $invoiceNumber = trim($args);
     if ($invoiceNumber === '') {
         sendMessage($chatId, "Format: /billing_lunas &lt;no_invoice&gt;");
@@ -758,7 +677,6 @@ function handleBillingLunas($chatId, $args, $silent = false) {
     }
     
     $invoice = fetchOne("SELECT * FROM invoices WHERE invoice_number = ?", [$invoiceNumber]);
-    
     if (!$invoice) {
         sendMessage($chatId, "Invoice {$invoiceNumber} tidak ditemukan.");
         return;
@@ -769,13 +687,7 @@ function handleBillingLunas($chatId, $args, $silent = false) {
         return;
     }
     
-    $updateData = [
-        'status' => 'paid',
-        'updated_at' => date('Y-m-d H:i:s'),
-        'paid_at' => date('Y-m-d H:i:s'),
-        'payment_method' => 'Telegram Bot'
-    ];
-    
+    $updateData = ['status' => 'paid', 'updated_at' => date('Y-m-d H:i:s'), 'paid_at' => date('Y-m-d H:i:s'), 'payment_method' => 'Telegram Bot'];
     update('invoices', $updateData, 'id = ?', [$invoice['id']]);
     
     if (isCustomerIsolated($invoice['customer_id'])) {
@@ -783,18 +695,112 @@ function handleBillingLunas($chatId, $args, $silent = false) {
     }
     
     logActivity('BOT_INVOICE_PAID', "Invoice: {$invoice['invoice_number']}");
-    
     if (!$silent) {
-        sendMessage($chatId, "Invoice {$invoiceNumber} berhasil ditandai lunas dan isolir pelanggan (jika ada) dibuka.");
+        sendMessage($chatId, "Invoice {$invoiceNumber} berhasil ditandai lunas.");
     }
 }
 
-function handleBillingMarkPaidCallback($chatId, $data, $callbackQuery) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah billing hanya untuk admin.");
+function handleInvoiceCreate($chatId, $args) {
+    if (!isAdminChat($chatId)) return;
+    $parts = preg_split('/\s+/', trim($args));
+    if (count($parts) < 3) {
+        sendMessage($chatId, "Format: /invoice_create <u_pppoe> <amount> <due_date> [desc]");
         return;
     }
     
+    $username = $parts[0];
+    $amount = (float)$parts[1];
+    $dueDate = $parts[2];
+    $description = (count($parts) > 3) ? trim(implode(' ', array_slice($parts, 3))) : '';
+    
+    if (strtotime($dueDate) === false) {
+        sendMessage($chatId, "Format tanggal tidak valid (YYYY-MM-DD).");
+        return;
+    }
+    
+    $customer = fetchOne("SELECT * FROM customers WHERE pppoe_username = ?", [$username]);
+    if (!$customer) {
+        sendMessage($chatId, "Pelanggan {$username} tidak ditemukan.");
+        return;
+    }
+    
+    $invoiceData = [
+        'invoice_number' => generateInvoiceNumber(),
+        'customer_id' => $customer['id'],
+        'amount' => $amount,
+        'status' => 'unpaid',
+        'due_date' => $dueDate,
+        'created_at' => date('Y-m-d H:i:s')
+    ];
+    if ($description !== '') $invoiceData['description'] = $description;
+    
+    insert('invoices', $invoiceData);
+    sendMessage($chatId, "Invoice {$invoiceData['invoice_number']} dibuat.");
+}
+
+function handleInvoiceEdit($chatId, $args) {
+    if (!isAdminChat($chatId)) return;
+    $parts = preg_split('/\s+/', trim($args));
+    if (count($parts) < 4) {
+        sendMessage($chatId, "Format: /invoice_edit <inv> <amount> <due> <status>");
+        return;
+    }
+    
+    $invoice = fetchOne("SELECT * FROM invoices WHERE invoice_number = ?", [$parts[0]]);
+    if (!$invoice) {
+        sendMessage($chatId, "Invoice {$parts[0]} tidak ditemukan.");
+        return;
+    }
+    
+    $status = strtolower($parts[3]);
+    $updateData = [
+        'amount' => (float)$parts[1],
+        'due_date' => $parts[2],
+        'status' => $status,
+        'updated_at' => date('Y-m-d H:i:s')
+    ];
+    
+    if ($status === 'paid' && $invoice['status'] !== 'paid') {
+        $updateData['paid_at'] = date('Y-m-d H:i:s');
+        $updateData['payment_method'] = 'Telegram Bot';
+        if (isCustomerIsolated($invoice['customer_id'])) unisolateCustomer($invoice['customer_id']);
+    }
+    
+    update('invoices', $updateData, 'id = ?', [$invoice['id']]);
+    sendMessage($chatId, "Invoice diperbarui.");
+}
+
+function handleInvoiceDelete($chatId, $args) {
+    if (!isAdminChat($chatId)) return;
+    $invoice = fetchOne("SELECT * FROM invoices WHERE invoice_number = ?", [trim($args)]);
+    if (!$invoice) {
+        sendMessage($chatId, "Invoice tidak ditemukan.");
+        return;
+    }
+    if ($invoice['status'] === 'paid') {
+        sendMessage($chatId, "Tidak bisa hapus invoice lunas.");
+        return;
+    }
+    delete('invoices', 'id = ?', [$invoice['id']]);
+    sendMessage($chatId, "Invoice dihapus.");
+}
+
+function handlePppoeProfileList($chatId) {
+    if (!isAdminChat($chatId)) return;
+    $profiles = mikrotikGetProfiles();
+    if (empty($profiles)) {
+        sendMessage($chatId, "Gagal ambil profile.");
+        return;
+    }
+    $msg = "👤 *Profile PPPoE*\n\n";
+    foreach ($profiles as $p) {
+        $msg .= "- {$p['name']} | {$p['rate-limit']}\n";
+    }
+    sendMessage($chatId, $msg);
+}
+
+function handleBillingMarkPaidCallback($chatId, $data, $callbackQuery) {
+    if (!isAdminChat($chatId)) return;
     $invoiceNumber = $data['inv'] ?? '';
     if ($invoiceNumber === '') {
         sendMessage($chatId, "Data invoice tidak valid.");
@@ -804,116 +810,49 @@ function handleBillingMarkPaidCallback($chatId, $data, $callbackQuery) {
     handleBillingLunas($chatId, $invoiceNumber, true);
     
     $messageId = $callbackQuery['message']['message_id'] ?? null;
-    if ($messageId === null) {
-        sendMessage($chatId, "Invoice {$invoiceNumber} berhasil ditandai lunas.");
-        return;
-    }
-    
-    $invoice = fetchOne("SELECT * FROM invoices WHERE invoice_number = ?", [$invoiceNumber]);
-    if (!$invoice) {
-        sendMessage($chatId, "Invoice {$invoiceNumber} berhasil ditandai lunas.");
-        return;
-    }
-    
-    $customer = fetchOne("SELECT * FROM customers WHERE id = ?", [$invoice['customer_id']]);
-    if (!$customer) {
-        sendMessage($chatId, "Invoice {$invoiceNumber} berhasil ditandai lunas.");
-        return;
-    }
-    
-    $invoices = fetchAll("SELECT * FROM invoices WHERE customer_id = ? ORDER BY created_at DESC LIMIT 5", [$customer['id']]);
-    
-    if (empty($invoices)) {
-        editMessageText($chatId, $messageId, "Tidak ada invoice untuk pelanggan {$customer['name']}.");
-        return;
-    }
-    
-    $message = "📜 Daftar Invoice {$customer['name']}\n\n";
-    $keyboard = [
-        'inline_keyboard' => []
-    ];
-    
-    foreach ($invoices as $inv) {
-        $status = $inv['status'] === 'paid' ? 'Lunas' : 'Belum Lunas';
-        $message .= "#{$inv['invoice_number']} - " . formatCurrency($inv['amount']) . " - {$status}\n";
-        $message .= "Jatuh tempo: " . formatDate($inv['due_date']) . "\n\n";
-        
-        if ($inv['status'] !== 'paid') {
-            $keyboard['inline_keyboard'][] = [
-                [
-                    'text' => "✅ {$inv['invoice_number']}",
-                    'callback_data' => 'action=billing_mark_paid&inv=' . urlencode($inv['invoice_number'])
-                ]
-            ];
+    if ($messageId) {
+        $invoice = fetchOne("SELECT * FROM invoices WHERE invoice_number = ?", [$invoiceNumber]);
+        if ($invoice) {
+            $customer = fetchOne("SELECT * FROM customers WHERE id = ?", [$invoice['customer_id']]);
+            if ($customer) {
+                // Refresh list
+                handleBillingInvoice($chatId, $customer['pppoe_username']);
+            }
         }
-    }
-    
-    if (empty($keyboard['inline_keyboard'])) {
-        editMessageText($chatId, $messageId, $message);
-    } else {
-        editMessageText($chatId, $messageId, $message, $keyboard);
     }
 }
 
 function handleMikrotikMenu($chatId) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $keyboard = [
         'inline_keyboard' => [
-            [
-                ['text' => '📊 Resource', 'callback_data' => 'action=mt_resource'],
-                ['text' => '📡 Online PPPoE', 'callback_data' => 'action=mt_online']
-            ],
-            [
-                ['text' => '📶 Ping IP/Host', 'callback_data' => 'action=mt_ping_help']
-            ],
-            [
-                ['text' => '👤 PPPoE Commands', 'callback_data' => 'action=mt_pppoe_help'],
-                ['text' => '🌐 Hotspot Commands', 'callback_data' => 'action=mt_hotspot_help']
-            ]
+            [['text' => '📊 Resource', 'callback_data' => 'action=mt_resource'], ['text' => '📡 Online PPPoE', 'callback_data' => 'action=mt_online']],
+            [['text' => '📶 Ping IP/Host', 'callback_data' => 'action=mt_ping_help']],
+            [['text' => '👤 PPPoE Commands', 'callback_data' => 'action=mt_pppoe_help'], ['text' => '🌐 Hotspot Commands', 'callback_data' => 'action=mt_hotspot_help']]
         ]
     ];
-    
     sendMessage($chatId, "Menu MikroTik Admin:", ['reply_markup' => $keyboard]);
 }
 
 function handleMikrotikResource($chatId) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $res = mikrotikGetResource();
     if (!$res) {
-        sendMessage($chatId, "Tidak dapat mengambil resource MikroTik. Cek konfigurasi di Settings.");
+        sendMessage($chatId, "Tidak dapat mengambil resource MikroTik.");
         return;
     }
     
     $cpu = $res['cpu-load'] ?? '-';
-    $memTotal = $res['total-memory'] ?? '-';
     $memFree = $res['free-memory'] ?? '-';
-    $hddTotal = $res['total-hdd-space'] ?? '-';
-    $hddFree = $res['free-hdd-space'] ?? '-';
+    $memTotal = $res['total-memory'] ?? '-';
     $uptime = $res['uptime'] ?? '-';
     
-    $message = "📊 Resource MikroTik\n\n";
-    $message .= "CPU Load: {$cpu}%\n";
-    $message .= "Memory: {$memFree} / {$memTotal}\n";
-    $message .= "HDD: {$hddFree} / {$hddTotal}\n";
-    $message .= "Uptime: {$uptime}\n";
-    
+    $message = "📊 *Resource MikroTik*\n\nCPU Load: {$cpu}%\nMemory: {$memFree} / {$memTotal} bytes\nUptime: {$uptime}";
     sendMessage($chatId, $message);
 }
 
 function handleMikrotikOnline($chatId) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $sessions = mikrotikGetActiveSessions();
     if (!is_array($sessions)) {
         sendMessage($chatId, "Tidak dapat mengambil data PPPoE aktif.");
@@ -926,731 +865,252 @@ function handleMikrotikOnline($chatId) {
         return;
     }
     
-    $message = "📡 PPPoE Online: {$total}\n\n";
-    
-    $maxList = 20;
-    $inlineMax = 10;
+    $message = "📡 *PPPoE Online: {$total}*\n\n";
+    $keyboard = ['inline_keyboard' => []];
     $count = 0;
-    $inlineCount = 0;
-    
-    $keyboard = [
-        'inline_keyboard' => []
-    ];
     
     foreach ($sessions as $s) {
         $name = $s['name'] ?? '-';
-        $addr = $s['address'] ?? '-';
-        $uptime = $s['uptime'] ?? '-';
-        $message .= "- {$name} ({$addr}) up {$uptime}\n";
+        $message .= "- {$name} ({$s['address']}) up {$s['uptime']}\n";
+        if ($count < 10) {
+            $keyboard['inline_keyboard'][] = [['text' => "❌ Kick {$name}", 'callback_data' => 'action=mt_pppoe_kick&name=' . urlencode($name)]];
+        }
         $count++;
-        
-        if ($inlineCount < $inlineMax && $name !== '-') {
-            $keyboard['inline_keyboard'][] = [
-                [
-                    'text' => "❌ {$name}",
-                    'callback_data' => 'action=mt_pppoe_kick&name=' . urlencode($name)
-                ]
-            ];
-            $inlineCount++;
-        }
-        
-        if ($count >= $maxList) {
-            break;
-        }
+        if ($count >= 20) break;
     }
-    
-    if ($total > $maxList) {
-        $message .= "\n...dan " . ($total - $maxList) . " user lain.";
-    }
-    
-    $keyboard['inline_keyboard'][] = [
-        [
-            'text' => '🔄 Refresh',
-            'callback_data' => 'action=mt_online'
-        ]
-    ];
     
     sendMessage($chatId, $message, ['reply_markup' => $keyboard]);
 }
 
 function handleMikrotikPing($chatId, $args) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $target = trim($args);
-    if ($target === '') {
-        handleMikrotikPingHelp($chatId);
-        return;
-    }
+    if ($target === '') return;
     
     $result = mikrotikPing($target);
     if (!$result) {
-        sendMessage($chatId, "Gagal melakukan ping dari MikroTik ke {$target}.");
+        sendMessage($chatId, "Gagal melakukan ping.");
         return;
     }
     
-    $sent = $result['sent'];
-    $recv = $result['received'];
-    $loss = $result['loss'];
     $avg = $result['avg'] !== null ? round($result['avg'], 2) . " ms" : '-';
-    
-    $message = "📶 Ping dari MikroTik\n\n";
-    $message .= "Target: {$target}\n";
-    $message .= "Terkirim: {$sent}\n";
-    $message .= "Diterima: {$recv}\n";
-    $message .= "Loss: {$loss}%\n";
-    $message .= "Rata-rata: {$avg}\n";
-    
+    $message = "📶 *Ping Result*\nTarget: {$target}\nSent: {$result['sent']}\nRecv: {$result['received']}\nLoss: {$result['loss']}%\nAvg: {$avg}";
     sendMessage($chatId, $message);
 }
 
 function handleMikrotikPingHelp($chatId) {
-    $message = "📶 Ping IP/Host dari MikroTik\n\n";
-    $message .= "Gunakan perintah:\n";
-    $message .= "/mt_ping &lt;ip/host&gt;\n\n";
-    $message .= "Contoh:\n";
-    $message .= "/mt_ping 8.8.8.8\n";
-    $message .= "/mt_ping google.com";
-    
-    sendMessage($chatId, $message);
+    sendMessage($chatId, "📶 *Ping Help*\n/mt_ping &lt;ip/host&gt;");
 }
 
 function handleMikrotikSetProfile($chatId, $args) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $parts = preg_split('/\s+/', trim($args));
     if (count($parts) < 2) {
-        $msg = "Ganti profile PPPoE\n\n";
-        $msg .= "Format:\n";
-        $msg .= "/mt_setprofile &lt;pppoe_username&gt; &lt;profile&gt;\n\n";
-        $msg .= "Contoh:\n";
-        $msg .= "/mt_setprofile pelanggan001 paket-10mbps";
-        sendMessage($chatId, $msg);
+        sendMessage($chatId, "Format: /mt_setprofile &lt;user&gt; &lt;profile&gt;");
         return;
     }
     
-    $username = $parts[0];
-    $profile = $parts[1];
-    
-    $ok = mikrotikSetProfile($username, $profile);
-    if (!$ok) {
-        sendMessage($chatId, "Gagal mengubah profile PPPoE {$username} ke {$profile}.");
-        return;
+    if (mikrotikSetProfile($parts[0], $parts[1])) {
+        mikrotikRemoveActiveSessionByName($parts[0]);
+        sendMessage($chatId, "Profile {$parts[0]} diubah ke {$parts[1]}.");
+    } else {
+        sendMessage($chatId, "Gagal mengubah profile.");
     }
-    
-    mikrotikRemoveActiveSessionByName($username);
-    
-    sendMessage($chatId, "Profile PPPoE {$username} berhasil diubah ke {$profile} dan session aktifnya dihapus (user akan reconnect dengan profile baru).");
 }
 
 function handleMikrotikPppoeHelp($chatId) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $message = "👤 Perintah PPPoE MikroTik\n\n";
-    $message .= "/pppoe_list - Daftar user PPPoE\n";
-    $message .= "/pppoe_add &lt;user&gt; &lt;pass&gt; &lt;profile&gt;\n";
-    $message .= "/pppoe_edit &lt;user&gt; &lt;pass&gt; &lt;profile&gt;\n";
-    $message .= "/pppoe_del &lt;user&gt;\n";
-    $message .= "/pppoe_disable &lt;user&gt;\n";
-    $message .= "/pppoe_enable &lt;user&gt;\n";
-    
-    sendMessage($chatId, $message);
+    $msg = "👤 *PPPoE Commands*\n/pppoe_list\n/pppoe_add &lt;u&gt; &lt;p&gt; &lt;prof&gt;\n/pppoe_edit &lt;u&gt; &lt;p&gt; &lt;prof&gt;\n/pppoe_del &lt;u&gt;\n/pppoe_disable &lt;u&gt;\n/pppoe_enable &lt;u&gt;";
+    sendMessage($chatId, $msg);
 }
 
 function handleMikrotikHotspotHelp($chatId) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $message = "🌐 Perintah Hotspot MikroTik\n\n";
-    $message .= "/hs_list - Daftar user Hotspot\n";
-    $message .= "/hs_add &lt;user&gt; &lt;pass&gt; &lt;profile&gt;\n";
-    $message .= "/hs_edit &lt;user&gt; &lt;pass&gt; &lt;profile&gt;\n";
-    $message .= "/hs_del &lt;user&gt;\n";
-    
-    sendMessage($chatId, $message);
+    $msg = "🌐 *Hotspot Commands*\n/hs_list\n/hs_add &lt;u&gt; &lt;p&gt; &lt;prof&gt;\n/hs_del &lt;u&gt;";
+    sendMessage($chatId, $msg);
 }
 
 function handlePppoeList($chatId) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $users = mikrotikGetPppoeUsers();
     if (empty($users)) {
-        sendMessage($chatId, "Tidak ada user PPPoE atau gagal mengambil data.");
+        sendMessage($chatId, "Tidak ada user PPPoE.");
         return;
     }
     
-    $message = "👤 Daftar User PPPoE\n\n";
-    $max = 30;
-    $inlineMax = 10;
+    $message = "👤 *Daftar User PPPoE*\n\n";
+    $keyboard = ['inline_keyboard' => []];
     $count = 0;
-    $inlineCount = 0;
-    
-    $keyboard = [
-        'inline_keyboard' => []
-    ];
-    
     foreach ($users as $u) {
-        $name = $u['name'] ?? '-';
-        $profile = $u['profile'] ?? '-';
-        $disabled = $u['disabled'] ?? 'false';
-        $status = $disabled === 'true' ? 'Nonaktif' : 'Aktif';
-        $message .= "- {$name} ({$profile}) {$status}\n";
-        $count++;
-        
-        if ($inlineCount < $inlineMax && $name !== '-') {
-            $row = [];
-            if ($disabled === 'true') {
-                $row[] = [
-                    'text' => "✅ {$name}",
-                    'callback_data' => 'action=mt_pppoe_enable&name=' . urlencode($name)
-                ];
-            } else {
-                $row[] = [
-                    'text' => "🚫 {$name}",
-                    'callback_data' => 'action=mt_pppoe_disable&name=' . urlencode($name)
-                ];
-            }
-            $row[] = [
-                'text' => "� {$name}",
-                'callback_data' => 'action=mt_pppoe_del&name=' . urlencode($name)
+        $status = ($u['disabled'] ?? 'false') === 'true' ? '🚫' : '✅';
+        $message .= "- {$u['name']} ({$u['profile']}) {$status}\n";
+        if ($count < 10) {
+            $keyboard['inline_keyboard'][] = [
+                ['text' => "🚫 Kick", 'callback_data' => 'action=mt_pppoe_kick&name=' . urlencode($u['name'])],
+                ['text' => "🗑 Del", 'callback_data' => 'action=mt_pppoe_del&name=' . urlencode($u['name'])]
             ];
-            $keyboard['inline_keyboard'][] = $row;
-            $inlineCount++;
         }
-        
-        if ($count >= $max) {
-            break;
-        }
+        $count++;
+        if ($count >= 20) break;
     }
-    
-    if (count($users) > $max) {
-        $message .= "\n...dan " . (count($users) - $max) . " user lain.";
-    }
-    
-    if (empty($keyboard['inline_keyboard'])) {
-        sendMessage($chatId, $message);
-    } else {
-        sendMessage($chatId, $message, ['reply_markup' => $keyboard]);
-    }
+    sendMessage($chatId, $message, ['reply_markup' => $keyboard]);
 }
 
 function handlePppoeAdd($chatId, $args) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $parts = preg_split('/\s+/', trim($args));
     if (count($parts) < 3) {
-        $msg = "Tambah user PPPoE\n\n";
-        $msg .= "Format:\n";
-        $msg .= "/pppoe_add &lt;user&gt; &lt;pass&gt; &lt;profile&gt;\n\n";
-        $msg .= "Contoh:\n";
-        $msg .= "/pppoe_add pelanggan001 rahasia paket-10mbps";
-        sendMessage($chatId, $msg);
+        sendMessage($chatId, "Format: /pppoe_add &lt;u&gt; &lt;p&gt; &lt;prof&gt;");
         return;
     }
     
-    $user = $parts[0];
-    $pass = $parts[1];
-    $profile = $parts[2];
-    
-    $result = mikrotikAddSecret($user, $pass, $profile, 'pppoe');
-    if ($result['success']) {
-        sendMessage($chatId, "User PPPoE {$user} berhasil ditambahkan dengan profile {$profile}.");
-    } else {
-        sendMessage($chatId, "Gagal menambah user PPPoE {$user}: {$result['message']}");
-    }
+    $res = mikrotikAddSecret($parts[0], $parts[1], $parts[2]);
+    sendMessage($chatId, $res['success'] ? "User ditambahkan." : "Gagal: " . $res['message']);
 }
 
 function handlePppoeEdit($chatId, $args) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $parts = preg_split('/\s+/', trim($args));
     if (count($parts) < 3) {
-        $msg = "Ubah user PPPoE\n\n";
-        $msg .= "Format:\n";
-        $msg .= "/pppoe_edit &lt;user&gt; &lt;pass&gt; &lt;profile&gt;\n\n";
-        $msg .= "Contoh:\n";
-        $msg .= "/pppoe_edit pelanggan001 rahasia paket-10mbps";
-        sendMessage($chatId, $msg);
+        sendMessage($chatId, "Format: /pppoe_edit &lt;u&gt; &lt;p&gt; &lt;prof&gt;");
         return;
     }
     
-    $user = $parts[0];
-    $pass = $parts[1];
-    $profile = $parts[2];
-    
-    $secret = mikrotikGetSecretByName($user);
-    if (!$secret || empty($secret['.id'])) {
-        sendMessage($chatId, "User PPPoE {$user} tidak ditemukan.");
+    $secret = mikrotikGetSecretByName($parts[0]);
+    if (!$secret) {
+        sendMessage($chatId, "User tidak ditemukan.");
         return;
     }
     
-    $result = mikrotikUpdateSecret($secret['.id'], ['password' => $pass, 'profile' => $profile]);
-    if ($result['success']) {
-        mikrotikRemoveActiveSessionByName($user);
-        sendMessage($chatId, "User PPPoE {$user} berhasil diperbarui.");
+    $res = mikrotikUpdateSecret($secret['.id'], ['password' => $parts[1], 'profile' => $parts[2]]);
+    if ($res['success']) {
+        mikrotikRemoveActiveSessionByName($parts[0]);
+        sendMessage($chatId, "User diperbarui.");
     } else {
-        sendMessage($chatId, "Gagal memperbarui user PPPoE {$user}: {$result['message']}");
+        sendMessage($chatId, "Gagal: " . $res['message']);
     }
 }
 
 function handlePppoeDel($chatId, $args, $silent = false) {
-    if (!isAdminChat($chatId)) {
-        if (!$silent) {
-            sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        }
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $user = trim($args);
-    if ($user === '') {
-        if (!$silent) {
-            sendMessage($chatId, "Format: /pppoe_del &lt;user&gt;");
-        }
-        return;
-    }
-    
     $secret = mikrotikGetSecretByName($user);
-    if (!$secret || empty($secret['.id'])) {
-        if (!$silent) {
-            sendMessage($chatId, "User PPPoE {$user} tidak ditemukan.");
-        }
+    if (!$secret) {
+        if (!$silent) sendMessage($chatId, "User tidak ditemukan.");
         return;
     }
     
-    $result = mikrotikDeleteSecret($secret['.id']);
-    if ($result['success']) {
-        if (!$silent) {
-            sendMessage($chatId, "User PPPoE {$user} berhasil dihapus.");
-        }
-    } else {
-        if (!$silent) {
-            sendMessage($chatId, "Gagal menghapus user PPPoE {$user}: {$result['message']}");
-        }
-    }
+    $res = mikrotikDeleteSecret($secret['.id']);
+    if (!$silent) sendMessage($chatId, $res['success'] ? "User dihapus." : "Gagal.");
 }
 
 function handlePppoeDisable($chatId, $args) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $user = trim($args);
-    if ($user === '') {
-        sendMessage($chatId, "Format: /pppoe_disable &lt;user&gt;");
-        return;
-    }
-    
     $secret = mikrotikGetSecretByName($user);
-    if (!$secret || empty($secret['.id'])) {
-        sendMessage($chatId, "User PPPoE {$user} tidak ditemukan.");
+    if (!$secret) {
+        sendMessage($chatId, "User tidak ditemukan.");
         return;
     }
     
-    $result = mikrotikUpdateSecret($secret['.id'], ['disabled' => 'true']);
-    if ($result['success']) {
+    $res = mikrotikUpdateSecret($secret['.id'], ['disabled' => 'true']);
+    if ($res['success']) {
         mikrotikRemoveActiveSessionByName($user);
-        sendMessage($chatId, "User PPPoE {$user} berhasil dinonaktifkan dan jika online akan diputus.");
+        sendMessage($chatId, "User dinonaktifkan.");
     } else {
-        sendMessage($chatId, "Gagal menonaktifkan user PPPoE {$user}: {$result['message']}");
+        sendMessage($chatId, "Gagal.");
     }
 }
 
 function handlePppoeEnable($chatId, $args) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $user = trim($args);
-    if ($user === '') {
-        sendMessage($chatId, "Format: /pppoe_enable &lt;user&gt;");
-        return;
-    }
-    
     $secret = mikrotikGetSecretByName($user);
-    if (!$secret || empty($secret['.id'])) {
-        sendMessage($chatId, "User PPPoE {$user} tidak ditemukan.");
+    if (!$secret) {
+        sendMessage($chatId, "User tidak ditemukan.");
         return;
     }
     
-    $result = mikrotikUpdateSecret($secret['.id'], ['disabled' => 'false']);
-    if ($result['success']) {
-        sendMessage($chatId, "User PPPoE {$user} berhasil diaktifkan.");
-    } else {
-        sendMessage($chatId, "Gagal mengaktifkan user PPPoE {$user}: {$result['message']}");
-    }
+    $res = mikrotikUpdateSecret($secret['.id'], ['disabled' => 'false']);
+    sendMessage($chatId, $res['success'] ? "User diaktifkan." : "Gagal.");
 }
 
 function handlePppoeKickCallback($chatId, $data) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $user = $data['name'] ?? '';
-    if ($user === '') {
-        sendMessage($chatId, "Data user PPPoE tidak valid.");
-        return;
-    }
-    
     if (mikrotikRemoveActiveSessionByName($user)) {
-        sendMessage($chatId, "Session PPPoE {$user} berhasil diputus.");
+        sendMessage($chatId, "Session {$user} diputus.");
     } else {
-        sendMessage($chatId, "Gagal memutus session PPPoE {$user}.");
+        sendMessage($chatId, "Gagal memutus session.");
     }
 }
 
 function handlePppoeDisableCallback($chatId, $data) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $user = $data['name'] ?? '';
-    if ($user === '') {
-        sendMessage($chatId, "Data user PPPoE tidak valid.");
-        return;
-    }
-    
-    handlePppoeDisable($chatId, $user);
+    handlePppoeDisable($chatId, $data['name'] ?? '');
 }
 
 function handlePppoeEnableCallback($chatId, $data) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $user = $data['name'] ?? '';
-    if ($user === '') {
-        sendMessage($chatId, "Data user PPPoE tidak valid.");
-        return;
-    }
-    
-    handlePppoeEnable($chatId, $user);
+    handlePppoeEnable($chatId, $data['name'] ?? '');
 }
 
 function handlePppoeDelCallback($chatId, $data, $callbackQuery) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $user = $data['name'] ?? '';
-    if ($user === '') {
-        sendMessage($chatId, "Data user PPPoE tidak valid.");
-        return;
-    }
-    
-    handlePppoeDel($chatId, $user, true);
-    
-    $messageId = $callbackQuery['message']['message_id'] ?? null;
-    if ($messageId === null) {
-        sendMessage($chatId, "User PPPoE {$user} berhasil dihapus.");
-        return;
-    }
-    
-    $users = mikrotikGetPppoeUsers();
-    if (empty($users)) {
-        editMessageText($chatId, $messageId, "Tidak ada user PPPoE atau gagal mengambil data.");
-        return;
-    }
-    
-    $message = "👤 Daftar User PPPoE\n\n";
-    $max = 30;
-    $inlineMax = 10;
-    $count = 0;
-    $inlineCount = 0;
-    
-    $keyboard = [
-        'inline_keyboard' => []
-    ];
-    
-    foreach ($users as $u) {
-        $name = $u['name'] ?? '-';
-        $profile = $u['profile'] ?? '-';
-        $disabled = $u['disabled'] ?? 'false';
-        $status = $disabled === 'true' ? 'Nonaktif' : 'Aktif';
-        $message .= "- {$name} ({$profile}) {$status}\n";
-        $count++;
-        
-        if ($inlineCount < $inlineMax && $name !== '-') {
-            $row = [];
-            if ($disabled === 'true') {
-                $row[] = [
-                    'text' => "✅ {$name}",
-                    'callback_data' => 'action=mt_pppoe_enable&name=' . urlencode($name)
-                ];
-            } else {
-                $row[] = [
-                    'text' => "🚫 {$name}",
-                    'callback_data' => 'action=mt_pppoe_disable&name=' . urlencode($name)
-                ];
-            }
-            $row[] = [
-                'text' => "🗑 {$name}",
-                'callback_data' => 'action=mt_pppoe_del&name=' . urlencode($name)
-            ];
-            $keyboard['inline_keyboard'][] = $row;
-            $inlineCount++;
-        }
-        
-        if ($count >= $max) {
-            break;
-        }
-    }
-    
-    if (count($users) > $max) {
-        $message .= "\n...dan " . (count($users) - $max) . " user lain.";
-    }
-    
-    if (empty($keyboard['inline_keyboard'])) {
-        editMessageText($chatId, $messageId, $message);
-    } else {
-        editMessageText($chatId, $messageId, $message, $keyboard);
-    }
+    handlePppoeDel($chatId, $data['name'] ?? '', true);
+    sendMessage($chatId, "User dihapus.");
 }
 
 function handleHotspotList($chatId) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $users = mikrotikGetHotspotUsers();
     if (empty($users)) {
-        sendMessage($chatId, "Tidak ada user Hotspot atau gagal mengambil data.");
+        sendMessage($chatId, "Tidak ada user Hotspot.");
         return;
     }
     
-    $message = "🌐 Daftar User Hotspot\n\n";
-    $max = 30;
-    $inlineMax = 10;
+    $message = "🌐 *Daftar User Hotspot*\n\n";
+    $keyboard = ['inline_keyboard' => []];
     $count = 0;
-    $inlineCount = 0;
-    
-    $keyboard = [
-        'inline_keyboard' => []
-    ];
-    
     foreach ($users as $u) {
-        $name = $u['name'] ?? '-';
-        $profile = $u['profile'] ?? '-';
-        $message .= "- {$name} ({$profile})\n";
+        $message .= "- {$u['name']} ({$u['profile']})\n";
+        if ($count < 10) {
+            $keyboard['inline_keyboard'][] = [['text' => "🗑 Del {$u['name']}", 'callback_data' => 'action=mt_hotspot_del&name=' . urlencode($u['name'])]];
+        }
         $count++;
-        
-        if ($inlineCount < $inlineMax && $name !== '-') {
-            $keyboard['inline_keyboard'][] = [
-                [
-                    'text' => "🗑 {$name}",
-                    'callback_data' => 'action=mt_hotspot_del&name=' . urlencode($name)
-                ]
-            ];
-            $inlineCount++;
-        }
-        
-        if ($count >= $max) {
-            break;
-        }
+        if ($count >= 20) break;
     }
-    
-    if (count($users) > $max) {
-        $message .= "\n...dan " . (count($users) - $max) . " user lain.";
-    }
-    
-    if (empty($keyboard['inline_keyboard'])) {
-        sendMessage($chatId, $message);
-    } else {
-        sendMessage($chatId, $message, ['reply_markup' => $keyboard]);
-    }
+    sendMessage($chatId, $message, ['reply_markup' => $keyboard]);
 }
 
 function handleHotspotAdd($chatId, $args) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
+    if (!isAdminChat($chatId)) return;
     $parts = preg_split('/\s+/', trim($args));
     if (count($parts) < 3) {
-        $msg = "Tambah user Hotspot\n\n";
-        $msg .= "Format:\n";
-        $msg .= "/hs_add &lt;user&gt; &lt;pass&gt; &lt;profile&gt;\n\n";
-        $msg .= "Contoh:\n";
-        $msg .= "/hs_add user1 rahasia hotspot-3mbps";
-        sendMessage($chatId, $msg);
+        sendMessage($chatId, "Format: /hs_add &lt;u&gt; &lt;p&gt; &lt;prof&gt;");
         return;
     }
     
-    $user = $parts[0];
-    $pass = $parts[1];
-    $profile = $parts[2];
-    
-    $ok = mikrotikAddHotspotUser($user, $pass, $profile);
-    if ($ok) {
-        sendMessage($chatId, "User Hotspot {$user} berhasil ditambahkan dengan profile {$profile}.");
+    if (mikrotikAddHotspotUser($parts[0], $parts[1], $parts[2])) {
+        sendMessage($chatId, "User Hotspot ditambahkan.");
     } else {
-        sendMessage($chatId, "Gagal menambah user Hotspot {$user}.");
-    }
-}
-
-function handleHotspotEdit($chatId, $args) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $parts = preg_split('/\s+/', trim($args));
-    if (count($parts) < 3) {
-        $msg = "Ubah user Hotspot\n\n";
-        $msg .= "Format:\n";
-        $msg .= "/hs_edit &lt;user&gt; &lt;pass&gt; &lt;profile&gt;\n\n";
-        $msg .= "Contoh:\n";
-        $msg .= "/hs_edit user1 rahasia hotspot-3mbps";
-        sendMessage($chatId, $msg);
-        return;
-    }
-    
-    $user = $parts[0];
-    $pass = $parts[1];
-    $profile = $parts[2];
-    
-    $hotspotUser = getHotspotUserByName($user);
-    if (!$hotspotUser || empty($hotspotUser['.id'])) {
-        sendMessage($chatId, "User Hotspot {$user} tidak ditemukan.");
-        return;
-    }
-    
-    $result = mikrotikUpdateHotspotUser($hotspotUser['.id'], ['password' => $pass, 'profile' => $profile]);
-    if ($result['success']) {
-        sendMessage($chatId, "User Hotspot {$user} berhasil diperbarui.");
-    } else {
-        sendMessage($chatId, "Gagal memperbarui user Hotspot {$user}: {$result['message']}");
+        sendMessage($chatId, "Gagal.");
     }
 }
 
 function handleHotspotDel($chatId, $args, $silent = false) {
-    if (!isAdminChat($chatId)) {
-        if (!$silent) {
-            sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        }
-        return;
-    }
-    
-    $user = trim($args);
-    if ($user === '') {
-        if (!$silent) {
-            sendMessage($chatId, "Format: /hs_del &lt;user&gt;");
-        }
-        return;
-    }
-    
-    $ok = mikrotikDeleteHotspotUser($user);
-    if ($ok) {
-        if (!$silent) {
-            sendMessage($chatId, "User Hotspot {$user} berhasil dihapus.");
-        }
+    if (!isAdminChat($chatId)) return;
+    if (mikrotikDeleteHotspotUser(trim($args))) {
+        if (!$silent) sendMessage($chatId, "User Hotspot dihapus.");
     } else {
-        if (!$silent) {
-            sendMessage($chatId, "Gagal menghapus user Hotspot {$user}.");
-        }
+        if (!$silent) sendMessage($chatId, "Gagal.");
     }
 }
 
 function handleHotspotDelCallback($chatId, $data, $callbackQuery) {
-    if (!isAdminChat($chatId)) {
-        sendMessage($chatId, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $user = $data['name'] ?? '';
-    if ($user === '') {
-        sendMessage($chatId, "Data user Hotspot tidak valid.");
-        return;
-    }
-    
-    handleHotspotDel($chatId, $user, true);
-    
-    $messageId = $callbackQuery['message']['message_id'] ?? null;
-    if ($messageId === null) {
-        sendMessage($chatId, "User Hotspot {$user} berhasil dihapus.");
-        return;
-    }
-    
-    $users = mikrotikGetHotspotUsers();
-    if (empty($users)) {
-        editMessageText($chatId, $messageId, "Tidak ada user Hotspot atau gagal mengambil data.");
-        return;
-    }
-    
-    $message = "🌐 Daftar User Hotspot\n\n";
-    $max = 30;
-    $inlineMax = 10;
-    $count = 0;
-    $inlineCount = 0;
-    
-    $keyboard = [
-        'inline_keyboard' => []
-    ];
-    
-    foreach ($users as $u) {
-        $name = $u['name'] ?? '-';
-        $profile = $u['profile'] ?? '-';
-        $message .= "- {$name} ({$profile})\n";
-        $count++;
-        
-        if ($inlineCount < $inlineMax && $name !== '-') {
-            $keyboard['inline_keyboard'][] = [
-                [
-                    'text' => "🗑 {$name}",
-                    'callback_data' => 'action=mt_hotspot_del&name=' . urlencode($name)
-                ]
-            ];
-            $inlineCount++;
-        }
-        
-        if ($count >= $max) {
-            break;
-        }
-    }
-    
-    if (count($users) > $max) {
-        $message .= "\n...dan " . (count($users) - $max) . " user lain.";
-    }
-    
-    if (empty($keyboard['inline_keyboard'])) {
-        editMessageText($chatId, $messageId, $message);
-    } else {
-        editMessageText($chatId, $messageId, $message, $keyboard);
-    }
+    handleHotspotDel($chatId, $data['name'] ?? '', true);
+    sendMessage($chatId, "User dihapus.");
 }
 
 function getHotspotUserByName($name) {
     $users = mikrotikGetHotspotUsers();
     foreach ($users as $u) {
-        if (($u['name'] ?? '') === $name) {
-            return $u;
-        }
+        if (($u['name'] ?? '') === $name) return $u;
     }
     return null;
 }

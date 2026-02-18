@@ -4,32 +4,17 @@
  */
 
 require_once 'includes/config.php';
-require_once 'includes/db.php';
-require_once 'includes/functions.php';
-
-$stats = [
-    'totalCustomers' => (int)(fetchOne("SELECT COUNT(*) as total FROM customers")['total'] ?? 0),
-    'totalPackages' => (int)(fetchOne("SELECT COUNT(*) as total FROM packages")['total'] ?? 0),
-    'totalInvoices' => (int)(fetchOne("SELECT COUNT(*) as total FROM invoices")['total'] ?? 0),
-    'totalOnu' => (int)(fetchOne("SELECT COUNT(*) as total FROM onu_locations")['total'] ?? 0),
-];
-
-$packages = fetchAll("SELECT * FROM packages ORDER BY price ASC");
-
-$adminContact = fetchOne("SELECT email, name FROM admin_users ORDER BY id ASC LIMIT 1");
-$adminEmail = '';
-if ($adminContact && !empty($adminContact['email'])) {
-    $adminEmail = $adminContact['email'];
-}
 ?>
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo APP_NAME; ?> - ISP Management System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             /* Dark Theme Colors */
@@ -58,12 +43,12 @@ if ($adminContact && !empty($adminContact['email'])) {
             --gradient-accent: linear-gradient(135deg, #00ff88 0%, #ffeb3b 100%);
         }
 
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Inter', system-ui, sans-serif;
             background: var(--bg-primary);
@@ -96,14 +81,12 @@ if ($adminContact && !empty($adminContact['email'])) {
             left: -50%;
             width: 200%;
             height: 200%;
-            background: conic-gradient(
-                from 0deg,
-                transparent,
-                var(--accent-purple),
-                var(--accent-cyan),
-                var(--accent-pink),
-                transparent
-            );
+            background: conic-gradient(from 0deg,
+                    transparent,
+                    var(--accent-purple),
+                    var(--accent-cyan),
+                    var(--accent-pink),
+                    transparent);
             animation: rotate 10s linear infinite;
             z-index: -1;
         }
@@ -118,8 +101,13 @@ if ($adminContact && !empty($adminContact['email'])) {
         }
 
         @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .header {
@@ -229,98 +217,6 @@ if ($adminContact && !empty($adminContact['email'])) {
             z-index: 1;
         }
 
-        .section-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        .section-subtitle {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .pricing-section {
-            margin-bottom: 40px;
-        }
-
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
-        }
-
-        .pricing-card {
-            background: var(--bg-card);
-            border-radius: 16px;
-            padding: 24px;
-            border: 1px solid var(--border-color);
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .pricing-card::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: var(--gradient-secondary);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: -1;
-        }
-
-        .pricing-card:hover {
-            transform: translateY(-6px);
-            box-shadow: var(--shadow-glow);
-            border-color: var(--accent-cyan);
-        }
-
-        .pricing-card:hover::before {
-            opacity: 0.08;
-        }
-
-        .pricing-name {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .pricing-desc {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-bottom: 16px;
-        }
-
-        .pricing-price {
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .pricing-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-
-        .pricing-chip {
-            padding: 4px 10px;
-            border-radius: 999px;
-            background: rgba(0, 245, 255, 0.08);
-            border: 1px solid rgba(0, 245, 255, 0.4);
-            color: var(--neon-cyan);
-        }
-
         .features {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -401,24 +297,24 @@ if ($adminContact && !empty($adminContact['email'])) {
             border: 1px solid var(--border-color);
             transition: all 0.3s ease;
         }
-        
+
         .stat-card:hover {
             transform: translateY(-5px);
             box-shadow: var(--shadow-glow);
             border-color: var(--accent-cyan);
         }
-        
+
         @media (max-width: 480px) {
             .stat-card {
                 padding: 15px;
             }
-            
+
             .stat-icon {
                 width: 50px;
                 height: 50px;
                 font-size: 1.2rem;
             }
-            
+
             .stat-info h3 {
                 font-size: 1.5rem;
             }
@@ -441,10 +337,25 @@ if ($adminContact && !empty($adminContact['email'])) {
             font-size: 1.5rem;
         }
 
-        .cyan { background: rgba(0, 245, 255, 0.1); color: var(--neon-cyan); }
-        .green { background: rgba(0, 255, 136, 0.1); color: var(--neon-green); }
-        .purple { background: rgba(191, 0, 255, 0.1); color: var(--neon-purple); }
-        .pink { background: rgba(255, 0, 200, 0.1); color: var(--neon-pink); }
+        .cyan {
+            background: rgba(0, 245, 255, 0.1);
+            color: var(--neon-cyan);
+        }
+
+        .green {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--neon-green);
+        }
+
+        .purple {
+            background: rgba(191, 0, 255, 0.1);
+            color: var(--neon-purple);
+        }
+
+        .pink {
+            background: rgba(255, 0, 200, 0.1);
+            color: var(--neon-pink);
+        }
 
         .stat-info h3 {
             font-size: 2rem;
@@ -568,71 +479,72 @@ if ($adminContact && !empty($adminContact['email'])) {
             .header h1 {
                 font-size: 2rem;
             }
-            
+
             .header p {
                 font-size: 1rem;
             }
-            
+
             .header .actions {
                 flex-direction: column;
                 align-items: center;
                 gap: 10px;
             }
-            
+
             .content {
                 padding: 30px 20px;
             }
-            
+
             .actions {
                 flex-direction: column;
                 align-items: center;
             }
-            
+
             .btn {
                 width: 100%;
                 max-width: 300px;
                 justify-content: center;
             }
         }
-        
+
         @media (max-width: 480px) {
             .header h1 {
                 font-size: 1.8rem;
             }
-            
+
             .header p {
                 font-size: 0.9rem;
             }
-            
+
             .stats-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .features {
                 grid-template-columns: 1fr;
             }
-            
+
             .feature {
                 padding: 20px;
             }
-            
+
             .content {
                 padding: 20px;
             }
-            
+
             .header .actions {
                 gap: 8px;
             }
         }
     </style>
 </head>
+
 <body>
-    <div class="container" id="home">
+    <div class="container">
         <div class="header">
-            <h1>🚀 <?php echo htmlspecialchars(APP_NAME); ?></h1>
-            <p><?php echo htmlspecialchars(getSetting('homepage_title', 'Internet cepat dan stabil untuk rumah dan bisnis Anda')); ?></p>
-            <div class="subtitle"><?php echo htmlspecialchars(getSetting('homepage_subtitle', 'Kelola koneksi pelanggan dan billing dengan sistem yang sederhana')); ?></div>
-            
+            <h1>🚀 GEMBOK</h1>
+            <p>ISP Management System - Modern & Powerful</p>
+            <div class="subtitle">Complete Solution for Internet Service Providers</div>
+
             <div class="actions">
                 <a href="./admin/login.php" class="btn btn-primary">
                     <i class="fas fa-user-shield"></i> Dashboard Admin
@@ -642,7 +554,7 @@ if ($adminContact && !empty($adminContact['email'])) {
                 </a>
             </div>
         </div>
-        
+
         <div class="content">
             <div class="stats-grid">
                 <div class="stat-card">
@@ -650,72 +562,43 @@ if ($adminContact && !empty($adminContact['email'])) {
                         <i class="fas fa-users"></i>
                     </div>
                     <div class="stat-info">
-                        <h3><?php echo number_format($stats['totalCustomers']); ?></h3>
+                        <h3>100+</h3>
                         <p>Pelanggan</p>
                     </div>
                 </div>
-                
+
                 <div class="stat-card">
                     <div class="stat-icon green">
                         <i class="fas fa-box"></i>
                     </div>
                     <div class="stat-info">
-                        <h3><?php echo number_format($stats['totalPackages']); ?></h3>
+                        <h3>15+</h3>
                         <p>Paket</p>
                     </div>
                 </div>
-                
+
                 <div class="stat-card">
                     <div class="stat-icon purple">
                         <i class="fas fa-file-invoice"></i>
                     </div>
                     <div class="stat-info">
-                        <h3><?php echo number_format($stats['totalInvoices']); ?></h3>
+                        <h3>500+</h3>
                         <p>Invoice</p>
                     </div>
                 </div>
-                
+
                 <div class="stat-card">
                     <div class="stat-icon pink">
                         <i class="fas fa-satellite-dish"></i>
                     </div>
                     <div class="stat-info">
-                        <h3><?php echo number_format($stats['totalOnu']); ?></h3>
+                        <h3>80+</h3>
                         <p>ONU Devices</p>
                     </div>
                 </div>
             </div>
 
-            <?php if (!empty($packages)): ?>
-                <div class="pricing-section" id="packages">
-                    <h2 class="section-title">Paket Internet</h2>
-                    <p class="section-subtitle">Pilih paket yang sesuai dengan kebutuhan internet Anda</p>
-                    <div class="pricing-grid">
-                        <?php foreach ($packages as $package): ?>
-                            <div class="pricing-card">
-                                <div class="pricing-name">
-                                    <?php echo htmlspecialchars($package['name']); ?>
-                                </div>
-                                <?php if (!empty($package['description'])): ?>
-                                    <div class="pricing-desc">
-                                        <?php echo nl2br(htmlspecialchars($package['description'])); ?>
-                                    </div>
-                                <?php endif; ?>
-                                <div class="pricing-price">
-                                    <?php echo formatCurrency($package['price']); ?>/bulan
-                                </div>
-                                <div class="pricing-meta">
-                                    <span class="pricing-chip">
-                                        Profil: <?php echo htmlspecialchars($package['profile_normal']); ?>
-                                    </span>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-            
-            <div class="features" id="features">
+            <div class="features">
                 <div class="feature">
                     <i class="fas fa-tachometer-alt"></i>
                     <h3>Dashboard Modern</h3>
@@ -752,23 +635,25 @@ if ($adminContact && !empty($adminContact['email'])) {
                     <p>Sistem pelaporan gangguan lengkap dengan notifikasi dan penanganan otomatis</p>
                 </div>
                 <div class="feature">
-                    <i class="fas fa-ticket-alt"></i>
-                    <h3>Voucher Generator</h3>
-                    <p>Generate voucher hotspot dengan mudah dan integrasi langsung ke MikroTik</p>
+                    <i class="fas fa-magic"></i>
+                    <h3>Voucher Editor</h3>
+                    <p>Desain template voucher hotspot sendiri dengan editor HTML/CSS yang interaktif</p>
                 </div>
             </div>
         </div>
-        
-        <div class="footer" id="contact">
+
+        <div class="footer">
             <p>
-                <span class="highlight"><?php echo htmlspecialchars(APP_NAME); ?></span> - <?php echo htmlspecialchars(getSetting('homepage_tagline', APP_NAME . ' - ISP Management System')); ?><br>
+                <span class="highlight">GEMBOK</span> - ISP Management System<br>
+                Dibuat dengan ❤️ untuk Internet Service Provider
             </p>
             <div class="footer-links">
-                <?php if (!empty($adminEmail)): ?>
-                    <a href="mailto:<?php echo htmlspecialchars($adminEmail); ?>" target="_blank">
-                        <i class="fas fa-envelope"></i> Kontak Admin
-                    </a>
-                <?php endif; ?>
+                <a href="https://github.com/alijayanet/gembok-php" target="_blank">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
+                <a href="mailto:rtech.support@example.com" target="_blank">
+                    <i class="fas fa-envelope"></i> Support
+                </a>
                 <a href="#" onclick="alert('Versi: <?php echo APP_VERSION; ?>')">
                     <i class="fas fa-code-branch"></i> v<?php echo APP_VERSION; ?>
                 </a>
@@ -776,4 +661,5 @@ if ($adminContact && !empty($adminContact['email'])) {
         </div>
     </div>
 </body>
+
 </html>

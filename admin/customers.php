@@ -18,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'phone' => sanitize($_POST['phone']),
                     'pppoe_username' => sanitize($_POST['pppoe_username']),
                     'package_id' => (int)$_POST['package_id'],
+                    'router_id' => (int)($_POST['router_id'] ?? 0),
                     'isolation_date' => (int)$_POST['isolation_date'],
                     'address' => sanitize($_POST['address']),
                     'lat' => $_POST['lat'] ?? null,
@@ -41,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'name' => sanitize($_POST['name']),
                     'phone' => sanitize($_POST['phone']),
                     'package_id' => (int)$_POST['package_id'],
+                    'router_id' => (int)($_POST['router_id'] ?? 0),
                     'isolation_date' => (int)$_POST['isolation_date'],
                     'address' => sanitize($_POST['address']),
                     'lat' => $_POST['lat'] ?? null,
@@ -90,14 +92,16 @@ $totalCustomers = fetchOne("SELECT COUNT(*) as total FROM customers")['total'] ?
 $totalPages = ceil($totalCustomers / $perPage);
 
 $customers = fetchAll("
-    SELECT c.*, p.name as package_name, p.price as package_price 
+    SELECT c.*, p.name as package_name, p.price as package_price, r.name as router_name
     FROM customers c 
     LEFT JOIN packages p ON c.package_id = p.id 
+    LEFT JOIN routers r ON c.router_id = r.id
     ORDER BY c.created_at DESC
-    LIMIT {$perPage} OFFSET {$offset}
+    LIMIT $perPage OFFSET $offset
 ");
 
 $packages = fetchAll("SELECT * FROM packages ORDER BY name");
+$routers = getAllRouters();
 
 ob_start();
 ?>
@@ -119,7 +123,7 @@ ob_start();
             <i class="fas fa-check-circle"></i>
         </div>
         <div class="stat-info">
-            <h3><?php echo count(array_filter($customers, function($c) { return $c['status'] === 'active'; })); ?></h3>
+            <h3><?php echo count(array_filter($customers, fn($c) => $c['status'] === 'active')); ?></h3>
             <p>Aktif</p>
         </div>
     </div>
@@ -129,7 +133,7 @@ ob_start();
             <i class="fas fa-ban"></i>
         </div>
         <div class="stat-info">
-            <h3><?php echo count(array_filter($customers, function($c) { return $c['status'] === 'isolated'; })); ?></h3>
+            <h3><?php echo count(array_filter($customers, fn($c) => $c['status'] === 'isolated')); ?></h3>
             <p>Isolir</p>
         </div>
     </div>
@@ -193,6 +197,18 @@ ob_start();
                     <?php endforeach; ?>
                 </select>
             </div>
+
+            <div class="form-group">
+                <label class="form-label">Router / MikroTik</label>
+                <select name="router_id" class="form-control" required style="color: var(--text-primary); background: var(--bg-card);">
+                    <option value="0">Default Router</option>
+                    <?php foreach ($routers as $r): ?>
+                        <option value="<?php echo $r['id']; ?>">
+                            <?php echo htmlspecialchars($r['name']); ?> (<?php echo htmlspecialchars($r['host']); ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
             
             <div class="form-group">
                 <label class="form-label">Tanggal Isolir (1-28)</label>
@@ -239,7 +255,7 @@ ob_start();
             <tr>
                 <th>ID</th>
                 <th>Nama & Kontak</th>
-                <th>Paket & Tagihan</th>
+                <th>Paket & Router</th>
                 <th>Status</th>
                 <th>PPPoE</th>
                 <th>Tgl Isolir</th>
@@ -261,10 +277,10 @@ ob_start();
                         <strong><?php echo htmlspecialchars($c['name']); ?></strong><br>
                         <small><i class="fab fa-whatsapp"></i> <?php echo htmlspecialchars($c['phone']); ?></small>
                     </td>
-                    <td data-label="Paket & Tagihan">
+                    <td data-label="Paket & Router">
                         <?php echo htmlspecialchars($c['package_name'] ?? 'Tanpa Paket'); ?><br>
-                        <small style="color: var(--neon-green);">
-                            <?php echo formatCurrency($c['package_price'] ?? 0); ?>
+                        <small style="color: var(--neon-cyan);">
+                            <i class="fas fa-server"></i> <?php echo htmlspecialchars($c['router_name'] ?? 'Default Router'); ?>
                         </small>
                     </td>
                     <td data-label="Status">
@@ -381,6 +397,18 @@ ob_start();
                         <?php foreach ($packages as $pkg): ?>
                             <option value="<?php echo $pkg['id']; ?>">
                                 <?php echo htmlspecialchars($pkg['name']); ?> (<?php echo formatCurrency($pkg['price']); ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Router / MikroTik</label>
+                    <select name="router_id" id="edit_router_id" class="form-control" required style="color: var(--text-primary); background: var(--bg-card);">
+                        <option value="0">Default Router</option>
+                        <?php foreach ($routers as $r): ?>
+                            <option value="<?php echo $r['id']; ?>">
+                                <?php echo htmlspecialchars($r['name']); ?> (<?php echo htmlspecialchars($r['host']); ?>)
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -603,6 +631,7 @@ function editCustomer(id) {
                 document.getElementById('edit_phone').value = customer.phone;
                 document.getElementById('edit_pppoe_username').value = customer.pppoe_username;
                 document.getElementById('edit_package_id').value = customer.package_id;
+                document.getElementById('edit_router_id').value = customer.router_id || 0;
                 document.getElementById('edit_isolation_date').value = customer.isolation_date;
                 document.getElementById('edit_address').value = customer.address || '';
                 document.getElementById('edit_lat').value = customer.lat || '';

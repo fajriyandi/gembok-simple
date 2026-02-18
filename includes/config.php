@@ -18,39 +18,41 @@ define('MIKROTIK_PORT', 8700);
 
 // Application Configuration
 define('APP_NAME', 'GEMBOK');
-$appScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$httpHost = $_SERVER['HTTP_HOST'] ?? '';
-$documentRoot = $_SERVER['DOCUMENT_ROOT'] ?? '';
-$basePath = '';
-if ($httpHost !== '' && $documentRoot !== '') {
-    $documentRoot = realpath($documentRoot);
-    $projectRoot = realpath(__DIR__ . '/..');
-    if ($documentRoot && $projectRoot && strpos($projectRoot, $documentRoot) === 0) {
-        $relativePath = str_replace('\\', '/', substr($projectRoot, strlen($documentRoot)));
-        $basePath = '/' . ltrim($relativePath, '/');
-        $basePath = rtrim($basePath, '/');
-    }
-}
-if ($httpHost !== '') {
-    define('APP_URL', $appScheme . '://' . $httpHost . $basePath);
+
+// APP_URL: Detect base URL dynamically — works on XAMPP, Laragon, and hosting
+// Strips /admin, /api, /portal, /cron, /webhooks, /install_steps subdirectories
+// so it always points to the application root.
+if (php_sapi_name() !== 'cli' && isset($_SERVER['HTTP_HOST'])) {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+    // Remove trailing known subdirectories
+    $scriptDir = preg_replace('#/(admin|api|portal|cron|webhooks|install_steps|includes)$#', '', $scriptDir);
+    $scriptDir = rtrim($scriptDir, '/');
+    define('APP_URL', $protocol . '://' . $_SERVER['HTTP_HOST'] . $scriptDir);
 } else {
-    define('APP_URL', 'http://localhost/gembok-simple');
+    // CLI mode (cron jobs, etc.)
+    define('APP_URL', 'http://localhost/gembok-simple2');
 }
+
 define('APP_VERSION', '2.0.0');
 define('GEMBOK_UPDATE_VERSION_URL', 'https://raw.githubusercontent.com/alijayanet/gembok-simple/main/version.txt');
 
 // Security
-define('ENCRYPTION_KEY', '7188ee15c026ea63b24f57299944f796d9fd0c560443326b6e8a4ae7a1910496');
+define('ENCRYPTION_KEY', '7fb4a49687498c36394338b2553b49e31d3a54b9d0349836495d489364958372');
 
 // WhatsApp Configuration
 define('WHATSAPP_API_URL', '');
 define('WHATSAPP_TOKEN', '');
+define('FONNTE_API_TOKEN', '');
+define('WABLAS_API_TOKEN', '');
+define('MPWA_API_KEY', '');
 
 // Tripay Configuration
 define('TRIPAY_API_KEY', '');
 define('TRIPAY_PRIVATE_KEY', '');
 define('TRIPAY_MERCHANT_CODE', '');
 
+// Midtrans Configuration
 if (!defined('MIDTRANS_API_KEY')) {
     define('MIDTRANS_API_KEY', '');
 }
@@ -62,26 +64,60 @@ if (!defined('MIDTRANS_MERCHANT_CODE')) {
 define('TELEGRAM_BOT_TOKEN', '');
 
 // GenieACS Configuration
-define('GENIEACS_URL', 'http://localhost:7557');
+define('GENIEACS_URL', 'http://192.168.8.89:7557');
 define('GENIEACS_USERNAME', '');
 define('GENIEACS_PASSWORD', '');
 
-// Pagination
-if (!defined('ITEMS_PER_PAGE')) {
-    define('ITEMS_PER_PAGE', 20);
+// Timezone
+date_default_timezone_set('Asia/Jakarta');
+
+// Error Reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../logs/php_error.log');
+
+// Session Configuration
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+ini_set('session.cookie_secure', 0); // Set to 1 if using HTTPS
+define('SESSION_TIMEOUT', 3600); // 1 hour
+
+// Session timeout check — only run if session has already been started
+// (auth.php calls session_start() before requiring this check)
+if (php_sapi_name() !== 'cli' && session_status() === PHP_SESSION_ACTIVE) {
+    if (isset($_SESSION['admin']['login_time'])) {
+        if (time() - $_SESSION['admin']['login_time'] > SESSION_TIMEOUT) {
+            session_destroy();
+            if (!headers_sent()) {
+                header('Location: ' . APP_URL . '/admin/login.php');
+            }
+            exit;
+        }
+    }
+
+    if (isset($_SESSION['customer']['login_time'])) {
+        if (time() - $_SESSION['customer']['login_time'] > SESSION_TIMEOUT) {
+            session_destroy();
+            if (!headers_sent()) {
+                header('Location: ' . APP_URL . '/portal/login.php');
+            }
+            exit;
+        }
+    }
 }
+
+// File Upload
+define('UPLOAD_MAX_SIZE', 5242880); // 5MB
+define('UPLOAD_ALLOWED_TYPES', ['jpg', 'jpeg', 'png', 'pdf']);
+
+// Pagination
+define('ITEMS_PER_PAGE', 20);
 
 // Currency
-if (!defined('CURRENCY')) {
-    define('CURRENCY', 'IDR');
-}
-if (!defined('CURRENCY_SYMBOL')) {
-    define('CURRENCY_SYMBOL', 'Rp');
-}
+define('CURRENCY', 'IDR');
+define('CURRENCY_SYMBOL', 'Rp');
 
-if (!defined('INVOICE_PREFIX')) {
-    define('INVOICE_PREFIX', 'INV');
-}
-if (!defined('INVOICE_START')) {
-    define('INVOICE_START', 1);
-}
+// Invoice Settings
+define('INVOICE_PREFIX', 'INV');
+define('INVOICE_START', 1);

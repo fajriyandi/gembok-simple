@@ -88,8 +88,8 @@ ob_start();
             <button class="btn btn-secondary btn-sm" onclick="location.reload()">
                 <i class="fas fa-redo"></i> Reload
             </button>
-            <button class="btn btn-secondary btn-sm" id="toggleLayer">
-                <i class="fas fa-layer-group"></i> Satellite
+            <button class="btn btn-secondary btn-sm" id="toggleLayer" onclick="toggleLayer()">
+                <i class="fas fa-layer-group"></i> Street
             </button>
             <button class="btn btn-secondary btn-sm" onclick="resetMap()">
                 <i class="fas fa-crosshairs"></i> Reset
@@ -376,8 +376,8 @@ ob_start();
     </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 <style>
 .flow-line-odp {
     stroke-dasharray: 12 12;
@@ -401,7 +401,7 @@ ob_start();
 
 <script>
 let map, markers = [], odpMarkers = [], lines = [];
-let currentLayer = 'osm';
+let currentLayer = 'satellite'; // Default Hybrid
 let osmLayer, satelliteLayer;
 let currentOnuSerial = null;
 let odpsCache = [];
@@ -409,17 +409,22 @@ let odpLinksCache = [];
 let tempOdpMarker = null;
 
 function initMap() {
-    map = L.map('map').setView([-6.200000, 106.816666], 13);
+    map = L.map('map').setView([-6.252471, 107.920660], 16);
     
-    osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
+    // Google Hybrid (Default)
+    satelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{
+        maxZoom: 20,
+        subdomains:['mt0','mt1','mt2','mt3']
     });
     
-    satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles © Esri'
+    // Google Streets
+    osmLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{
+        maxZoom: 20,
+        subdomains:['mt0','mt1','mt2','mt3']
     });
     
-    osmLayer.addTo(map);
+    satelliteLayer.addTo(map);
+    currentLayer = 'satellite'; // Match default to Satellite (Hybrid)
     
     map.on('click', function(e) {
         setOdpPoint(e.latlng.lat, e.latlng.lng, true);
@@ -698,7 +703,7 @@ function toggleLayer() {
 }
 
 function resetMap() {
-    map.setView([-6.200000, 106.816666], 13);
+    map.setView([-6.252471, 107.920660], 16);
 }
 
 function useMapCenter() {

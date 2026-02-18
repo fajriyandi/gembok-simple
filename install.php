@@ -121,7 +121,6 @@ function installApplication() {
         header("Location: admin/login.php");
         exit;
     } catch (Exception $e) {
-        global $error;
         $error = "Installation failed: " . $e->getMessage();
     }
 }
@@ -131,7 +130,6 @@ function createConfigFile() {
     $admin = $_SESSION['admin_config'];
     $mikrotik = $_SESSION['mikrotik_config'];
     $integrations = $_SESSION['integrations_config'];
-    $encryptionKey = bin2hex(random_bytes(32));
     
     return <<<PHP
 <?php
@@ -154,29 +152,11 @@ define('MIKROTIK_PORT', {$mikrotik['port']});
 
 // Application Configuration
 define('APP_NAME', 'GEMBOK');
-\$appScheme = (!empty(\$_SERVER['HTTPS']) && \$_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-\$httpHost = \$_SERVER['HTTP_HOST'] ?? '';
-\$documentRoot = \$_SERVER['DOCUMENT_ROOT'] ?? '';
-\$basePath = '';
-if (\$httpHost !== '' && \$documentRoot !== '') {
-    \$documentRoot = realpath(\$documentRoot);
-    \$projectRoot = realpath(__DIR__ . '/..');
-    if (\$documentRoot && \$projectRoot && strpos(\$projectRoot, \$documentRoot) === 0) {
-        \$relativePath = str_replace('\\\\', '/', substr(\$projectRoot, strlen(\$documentRoot)));
-        \$basePath = '/' . ltrim(\$relativePath, '/');
-        \$basePath = rtrim(\$basePath, '/');
-    }
-}
-if (\$httpHost !== '') {
-    define('APP_URL', \$appScheme . '://' . \$httpHost . \$basePath);
-} else {
-    define('APP_URL', 'http://localhost/gembok-simple');
-}
+define('APP_URL', 'http://' . \$_SERVER['HTTP_HOST'] . dirname(\$_SERVER['PHP_SELF']));
 define('APP_VERSION', '2.0.0');
-define('GEMBOK_UPDATE_VERSION_URL', 'https://raw.githubusercontent.com/alijayanet/gembok-simple/main/version.txt');
 
 // Security
-define('ENCRYPTION_KEY', '{$encryptionKey}');
+define('ENCRYPTION_KEY', bin2hex(random_bytes(32)));
 
 // WhatsApp Configuration
 define('WHATSAPP_API_URL', '{$integrations['whatsapp_url']}');
@@ -187,13 +167,6 @@ define('TRIPAY_API_KEY', '{$integrations['tripay_api_key']}');
 define('TRIPAY_PRIVATE_KEY', '{$integrations['tripay_private_key']}');
 define('TRIPAY_MERCHANT_CODE', '{$integrations['tripay_merchant_code']}');
 
-if (!defined('MIDTRANS_API_KEY')) {
-    define('MIDTRANS_API_KEY', '');
-}
-if (!defined('MIDTRANS_MERCHANT_CODE')) {
-    define('MIDTRANS_MERCHANT_CODE', '');
-}
-
 // Telegram Configuration
 define('TELEGRAM_BOT_TOKEN', '{$integrations['telegram_token']}');
 
@@ -201,19 +174,6 @@ define('TELEGRAM_BOT_TOKEN', '{$integrations['telegram_token']}');
 define('GENIEACS_URL', 'http://localhost:7557');
 define('GENIEACS_USERNAME', '');
 define('GENIEACS_PASSWORD', '');
-
-// Pagination
-if (!defined('ITEMS_PER_PAGE')) {
-    define('ITEMS_PER_PAGE', 20);
-}
-
-// Currency
-if (!defined('CURRENCY')) {
-    define('CURRENCY', 'IDR');
-}
-if (!defined('CURRENCY_SYMBOL')) {
-    define('CURRENCY_SYMBOL', 'Rp');
-}
 PHP;
 }
 
@@ -258,6 +218,7 @@ function createDatabaseTables() {
         phone VARCHAR(20),
         pppoe_username VARCHAR(50) UNIQUE NOT NULL,
         package_id INT,
+        router_id INT DEFAULT 0,
         status ENUM('active', 'isolated') DEFAULT 'active',
         isolation_date INT DEFAULT 20,
         address TEXT,
@@ -355,10 +316,23 @@ function createDatabaseTables() {
     CREATE TABLE IF NOT EXISTS webhook_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
         source VARCHAR(50),
-        payload TEXT,
+        payload JSON,
         status_code INT,
         response TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS routers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        host VARCHAR(100) NOT NULL,
+        username VARCHAR(100) NOT NULL,
+        password VARCHAR(100) NOT NULL,
+        port INT DEFAULT 8728,
+        is_active BOOLEAN DEFAULT 0,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ";
     
@@ -374,14 +348,7 @@ function insertDefaultData() {
     
     // Insert admin user
     $admin = $_SESSION['admin_config'];
-    $stmt = $pdo->prepare("
-        INSERT INTO admin_users (username, password, email, created_at)
-        VALUES (?, ?, ?, NOW())
-        ON DUPLICATE KEY UPDATE
-            password = VALUES(password),
-            email = VALUES(email),
-            updated_at = NOW()
-    ");
+    $stmt = $pdo->prepare("INSERT INTO admin_users (username, password, email, created_at) VALUES (?, ?, ?, NOW())");
     $stmt->execute([$admin['username'], $admin['password'], $admin['email']]);
     
     // Insert default packages
@@ -421,6 +388,20 @@ function insertDefaultData() {
     foreach ($cronSchedules as $schedule) {
         $stmt = $pdo->prepare("INSERT IGNORE INTO cron_schedules (name, task_type, schedule_days, schedule_time, is_active) VALUES (?, ?, ?, ?, ?)");
         $stmt->execute($schedule);
+    }
+
+    // Insert default router from session
+    if (isset($_SESSION['mikrotik_config'])) {
+        $mc = $_SESSION['mikrotik_config'];
+        $stmt = $pdo->prepare("INSERT INTO routers (name, host, username, password, port, is_active) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            'Main Router',
+            $mc['host'],
+            $mc['user'],
+            $mc['pass'],
+            $mc['port'],
+            1
+        ]);
     }
 }
 ?>

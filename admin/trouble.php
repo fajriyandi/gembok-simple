@@ -124,15 +124,9 @@ $customers = fetchAll("SELECT id, name, pppoe_username FROM customers WHERE stat
 
 // Calculate stats
 $totalTickets = count($tickets);
-$pendingTickets = count(array_filter($tickets, function($t) {
-    return $t['status'] === 'pending';
-}));
-$inProgressTickets = count(array_filter($tickets, function($t) {
-    return $t['status'] === 'in_progress';
-}));
-$resolvedTickets = count(array_filter($tickets, function($t) {
-    return $t['status'] === 'resolved';
-}));
+$pendingTickets = count(array_filter($tickets, fn($t) => $t['status'] === 'pending'));
+$inProgressTickets = count(array_filter($tickets, fn($t) => $t['status'] === 'in_progress'));
+$resolvedTickets = count(array_filter($tickets, fn($t) => $t['status'] === 'resolved'));
 
 ob_start();
 ?>

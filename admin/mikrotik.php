@@ -45,7 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = mikrotikUpdateSecret($id, $data);
             
             if ($result['success']) {
-                mikrotikRemoveActiveSessionByName($data['name']);
                 setFlash('success', 'User PPPoE berhasil diperbarui');
                 logActivity('UPDATE_PPPOE_USER', "ID: $id");
             } else {
@@ -83,52 +82,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             redirect('mikrotik.php');
             break;
-            
-        case 'profile_add':
-            $result = mikrotikAddPppoeProfile(
-                sanitize($_POST['profile_name']),
-                sanitize($_POST['rate_limit'])
-            );
-            
-            if ($result['success']) {
-                setFlash('success', 'Profile PPPoE berhasil ditambahkan');
-                logActivity('ADD_PPPOE_PROFILE', "Profile: " . $_POST['profile_name']);
-            } else {
-                setFlash('error', 'Gagal menambahkan profile: ' . $result['message']);
-            }
-            redirect('mikrotik.php');
-            break;
-            
-        case 'profile_edit':
-            $id = $_POST['profile_id'];
-            $data = [
-                'name' => sanitize($_POST['profile_name']),
-                'rate_limit' => sanitize($_POST['rate_limit'])
-            ];
-            
-            $result = mikrotikUpdatePppoeProfile($id, $data);
-            
-            if ($result['success']) {
-                setFlash('success', 'Profile PPPoE berhasil diperbarui');
-                logActivity('UPDATE_PPPOE_PROFILE', "ID: $id");
-            } else {
-                setFlash('error', 'Gagal memperbarui profile: ' . $result['message']);
-            }
-            redirect('mikrotik.php');
-            break;
-            
-        case 'profile_delete':
-            $id = $_POST['profile_id'];
-            $result = mikrotikDeletePppoeProfile($id);
-            
-            if ($result['success']) {
-                setFlash('success', 'Profile PPPoE berhasil dihapus');
-                logActivity('DELETE_PPPOE_PROFILE', "ID: $id");
-            } else {
-                setFlash('error', 'Gagal menghapus profile: ' . $result['message']);
-            }
-            redirect('mikrotik.php');
-            break;
     }
 }
 
@@ -144,9 +97,7 @@ $onlineCount = count($activeSessions);
 $onlineUsernames = array_column($activeSessions, 'name');
 
 // Calculate stats
-$disabledCount = count(array_filter($mikrotikUsers, function($u) {
-    return ($u['disabled'] ?? 'false') === 'true';
-}));
+$disabledCount = count(array_filter($mikrotikUsers, fn($u) => ($u['disabled'] ?? 'false') === 'true'));
 $offlineCount = $totalUsers - $onlineCount;
 
 // Get MikroTik profiles
@@ -214,86 +165,6 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<div class="card">
-    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <a href="#pppoeProfilesSection" class="btn btn-secondary">
-            <i class="fas fa-layer-group"></i> Profile PPPoE
-        </a>
-        <a href="#pppoeUsersSection" class="btn btn-secondary">
-            <i class="fas fa-network-wired"></i> User PPPoE
-        </a>
-    </div>
-</div>
-
-<div class="card" id="pppoeProfilesSection">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-layer-group"></i> Profile PPPoE</h3>
-        <input type="text" id="searchPppoeProfile" class="form-control" placeholder="Cari profile..." style="width: 250px;">
-    </div>
-    
-    <form method="POST" style="padding: 0 20px 20px;">
-        <input type="hidden" name="action" value="profile_add">
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
-            <div class="form-group">
-                <label class="form-label">Nama Profile</label>
-                <input type="text" name="profile_name" class="form-control" required placeholder="nama-profile">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Rate Limit</label>
-                <input type="text" name="rate_limit" class="form-control" placeholder="2M/2M">
-            </div>
-        </div>
-        
-        <button type="submit" class="btn btn-primary" style="margin-top: 20px;">
-            <i class="fas fa-save"></i> Tambah Profile
-        </button>
-    </form>
-    
-    <table class="data-table" id="pppoeProfileTable">
-        <thead>
-            <tr>
-                <th>Nama</th>
-                <th>Rate Limit</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (empty($mikrotikProfiles)): ?>
-                <tr>
-                    <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 30px;" data-label="Data">
-                        <i class="fas fa-layer-group" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
-                        Belum ada profile PPPoE atau tidak terkoneksi ke MikroTik
-                    </td>
-                </tr>
-            <?php else: ?>
-                <?php foreach ($mikrotikProfiles as $profile): ?>
-                <tr>
-                    <td data-label="Nama">
-                        <strong><?php echo htmlspecialchars($profile['name'] ?? 'N/A'); ?></strong>
-                    </td>
-                    <td data-label="Rate Limit"><?php echo htmlspecialchars($profile['rate-limit'] ?? '-'); ?></td>
-                    <td data-label="Aksi">
-                        <div style="display: flex; gap: 5px;">
-                            <button class="btn btn-secondary btn-sm" onclick="editProfile('<?php echo htmlspecialchars($profile['.id'] ?? ''); ?>', '<?php echo htmlspecialchars($profile['name'] ?? '', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($profile['rate-limit'] ?? '', ENT_QUOTES); ?>')" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <form method="POST" style="display: inline;" onsubmit="return confirm('Hapus profile <?php echo htmlspecialchars($profile['name'] ?? ''); ?>?')">
-                                <input type="hidden" name="action" value="profile_delete">
-                                <input type="hidden" name="profile_id" value="<?php echo htmlspecialchars($profile['.id'] ?? ''); ?>">
-                                <button type="submit" class="btn btn-danger btn-sm" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
-</div>
-
 <!-- Add User Form -->
 <div class="card">
     <div class="card-header">
@@ -340,13 +211,13 @@ ob_start();
 </div>
 
 <!-- Users Table -->
-<div class="card" id="pppoeUsersSection">
+<div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-network-wired"></i> Daftar PPPoE User</h3>
-        <input type="text" id="searchPppoeUser" class="form-control" placeholder="Cari user..." style="width: 250px;">
+        <input type="text" id="searchUser" class="form-control" placeholder="Cari user..." style="width: 250px;">
     </div>
     
-    <table class="data-table" id="pppoeUserTable">
+    <table class="data-table">
         <thead>
             <tr>
                 <th>Username</th>
@@ -431,36 +302,6 @@ ob_start();
     </table>
 </div>
 
-<div id="profileModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center;">
-    <div class="card" style="width: 450px; max-width: 90%; margin: 2rem;">
-        <div class="card-header">
-            <h3 class="card-title"><i class="fas fa-edit"></i> Edit Profile PPPoE</h3>
-            <button onclick="closeProfileModal()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.25rem;">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <form method="POST">
-            <input type="hidden" name="action" value="profile_edit">
-            <input type="hidden" name="profile_id" id="edit_profile_id">
-            
-            <div class="form-group">
-                <label class="form-label">Nama Profile</label>
-                <input type="text" name="profile_name" id="edit_profile_name" class="form-control" required>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Rate Limit</label>
-                <input type="text" name="rate_limit" id="edit_rate_limit" class="form-control" placeholder="2M/2M">
-            </div>
-            
-            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
-                <button type="button" class="btn btn-secondary" onclick="closeProfileModal()">Batal</button>
-                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Simpan</button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <!-- Edit Modal -->
 <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center;">
     <div class="card" style="width: 450px; max-width: 90%; margin: 2rem;">
@@ -516,19 +357,9 @@ ob_start();
 <script>
 const usersData = <?php echo json_encode($mikrotikUsers); ?>;
 
-document.getElementById('searchPppoeUser').addEventListener('input', function(e) {
+document.getElementById('searchUser').addEventListener('input', function(e) {
     const search = e.target.value.toLowerCase();
-    const rows = document.querySelectorAll('#pppoeUserTable tbody tr');
-    
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(search) ? '' : 'none';
-    });
-});
-
-document.getElementById('searchPppoeProfile').addEventListener('input', function(e) {
-    const search = e.target.value.toLowerCase();
-    const rows = document.querySelectorAll('#pppoeProfileTable tbody tr');
+    const rows = document.querySelectorAll('.data-table tbody tr');
     
     rows.forEach(row => {
         const text = row.textContent.toLowerCase();
@@ -545,19 +376,8 @@ function editUser(id, name, password, profile, service) {
     document.getElementById('editModal').style.display = 'flex';
 }
 
-function editProfile(id, name, rateLimit) {
-    document.getElementById('edit_profile_id').value = id;
-    document.getElementById('edit_profile_name').value = name;
-    document.getElementById('edit_rate_limit').value = rateLimit;
-    document.getElementById('profileModal').style.display = 'flex';
-}
-
 function closeEditModal() {
     document.getElementById('editModal').style.display = 'none';
-}
-
-function closeProfileModal() {
-    document.getElementById('profileModal').style.display = 'none';
 }
 
 document.getElementById('editModal').addEventListener('click', function(e) {
@@ -566,16 +386,9 @@ document.getElementById('editModal').addEventListener('click', function(e) {
     }
 });
 
-document.getElementById('profileModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeProfileModal();
-    }
-});
-
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeEditModal();
-        closeProfileModal();
     }
 });
 </script>

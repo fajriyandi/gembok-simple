@@ -280,8 +280,8 @@ ob_start();
 </div>
 
 <!-- Edit Package Modal -->
-<div id="editModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center;">
-    <div class="card" style="width: 500px; max-width: 90%; margin: 2rem;">
+<div id="editModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 2000; overflow-y: auto; padding: 40px 0;">
+    <div class="card" style="width: 500px; max-width: 90%; margin: 0 auto; position: relative;">
         <div class="card-header">
             <h3 class="card-title"><i class="fas fa-edit"></i> Edit Paket</h3>
             <button onclick="closeEditModal()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.25rem;">

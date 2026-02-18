@@ -4,10 +4,6 @@ requireAdminLogin();
 
 $pageTitle = 'Update Aplikasi';
 
-if (!defined('GEMBOK_UPDATE_VERSION_URL')) {
-    define('GEMBOK_UPDATE_VERSION_URL', '');
-}
-
 $currentVersion = APP_VERSION;
 $localVersion = $currentVersion;
 $localVersionFile = dirname(__DIR__) . '/version.txt';

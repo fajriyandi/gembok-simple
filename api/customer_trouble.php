@@ -7,14 +7,13 @@ require_once '../includes/auth.php';
 require_once '../includes/functions.php';
 
 // Check if customer is logged in
-if (!isCustomerLoggedIn()) {
+if (!isset($_SESSION['customer_id'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
 }
 
-$customerId = $_SESSION['customer']['id'];
-$pdo = getDB();
+$customerId = $_SESSION['customer_id'];
 
 // Handle GET request (fetch tickets)
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

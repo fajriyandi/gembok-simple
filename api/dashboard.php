@@ -5,8 +5,10 @@
 
 header('Content-Type: application/json');
 
-require_once '../includes/db.php';
+require_once '../includes/auth.php';
 require_once '../includes/functions.php';
+
+requireAdminLogin();
 
 try {
     // Get statistics
@@ -20,7 +22,7 @@ try {
         'pendingInvoices' => fetchOne("SELECT COUNT(*) as total FROM invoices WHERE status = 'unpaid'")['total'] ?? 0,
         'totalRevenue' => fetchOne("SELECT SUM(amount) as total FROM invoices WHERE status = 'paid'")['total'] ?? 0,
     ];
-    
+
     // Get recent invoices
     $recentInvoices = fetchAll("
         SELECT i.*, c.name as customer_name 
@@ -29,7 +31,7 @@ try {
         ORDER BY i.created_at DESC 
         LIMIT 10
     ");
-    
+
     // Get recent customers
     $recentCustomers = fetchAll("
         SELECT c.*, p.name as package_name 
@@ -38,7 +40,7 @@ try {
         ORDER BY c.created_at DESC 
         LIMIT 5
     ");
-    
+
     echo json_encode([
         'success' => true,
         'data' => [
@@ -47,7 +49,7 @@ try {
             'recentCustomers' => $recentCustomers
         ]
     ]);
-    
+
 } catch (Exception $e) {
     logError("API Error (dashboard.php): " . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Internal server error']);

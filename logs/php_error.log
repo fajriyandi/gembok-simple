@@ -1,0 +1,22 @@
+[17-Feb-2026 17:10:06 Asia/Jakarta] PHP Warning:  Undefined variable $hotspotProfiles in C:\laragon\www\marwan\admin\hotspot-user.php on line 28
+[17-Feb-2026 17:10:06 Asia/Jakarta] PHP Warning:  foreach() argument must be of type array|object, null given in C:\laragon\www\marwan\admin\hotspot-user.php on line 28
+[17-Feb-2026 18:35:25 Asia/Jakarta] PHP Warning:  Undefined variable $hotspotProfiles in C:\laragon\www\marwan\admin\hotspot-user.php on line 28
+[17-Feb-2026 18:35:25 Asia/Jakarta] PHP Warning:  foreach() argument must be of type array|object, null given in C:\laragon\www\marwan\admin\hotspot-user.php on line 28
+[17-Feb-2026 19:30:39 Asia/Jakarta] PHP Warning:  Undefined variable $hotspotProfiles in C:\laragon\www\marwan\admin\hotspot-user.php on line 28
+[17-Feb-2026 19:30:39 Asia/Jakarta] PHP Warning:  foreach() argument must be of type array|object, null given in C:\laragon\www\marwan\admin\hotspot-user.php on line 28
+[18-Feb-2026 07:52:27 Asia/Jakarta] PHP Fatal error:  Uncaught TypeError: htmlspecialchars(): Argument #1 ($string) must be of type string, array given in C:\xampp3\htdocs\gembok-simple2\admin\genieacs.php:134
+Stack trace:
+#0 C:\xampp3\htdocs\gembok-simple2\admin\genieacs.php(134): htmlspecialchars(Array)
+#1 {main}
+  thrown in C:\xampp3\htdocs\gembok-simple2\admin\genieacs.php on line 134
+[18-Feb-2026 07:52:40 Asia/Jakarta] PHP Fatal error:  Uncaught TypeError: htmlspecialchars(): Argument #1 ($string) must be of type string, array given in C:\xampp3\htdocs\gembok-simple2\admin\genieacs.php:134
+Stack trace:
+#0 C:\xampp3\htdocs\gembok-simple2\admin\genieacs.php(134): htmlspecialchars(Array)
+#1 {main}
+  thrown in C:\xampp3\htdocs\gembok-simple2\admin\genieacs.php on line 134
+[18-Feb-2026 08:41:42 Asia/Jakarta] PHP Fatal error:  Uncaught Error: Call to undefined function fetchAll() in C:\xampp3\htdocs\gembok-simple2\includes\functions.php:1419
+Stack trace:
+#0 C:\xampp3\htdocs\gembok-simple2\includes\functions.php(1440): getGenieacsSettings()
+#1 C:\xampp3\htdocs\gembok-simple2\debug_genieacs.php(6): genieacsGetDevices()
+#2 {main}
+  thrown in C:\xampp3\htdocs\gembok-simple2\includes\functions.php on line 1419

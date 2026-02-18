@@ -9,6 +9,15 @@ require_once '../includes/payment.php';
 
 header('Content-Type: application/json');
 
+// Helper to get settings from database
+function getSetting($key, $default = '') {
+    if (defined($key)) {
+        return constant($key);
+    }
+    $row = fetchOne("SELECT setting_value FROM settings WHERE setting_key = ?", [$key]);
+    return $row ? $row['setting_value'] : $default;
+}
+
 try {
     // Get raw POST data
     $json = file_get_contents('php://input');
@@ -59,6 +68,7 @@ try {
             break;
             
         default:
+            // Some providers send message without explicit type
             if (!handleMessageReceived($data)) {
                 logActivity('WHATSAPP_WEBHOOK', "Unknown type: {$webhookType}");
             }
@@ -77,9 +87,6 @@ function handleMessageStatus($data) {
     $recipient = $data['recipient'] ?? '';
     
     logActivity('WHATSAPP_MESSAGE_STATUS', "Status: {$status}, Message ID: {$messageId}, Recipient: {$recipient}");
-    
-    // Update message status in database if needed
-    // This depends on your application's requirements
 }
 
 function handleMessageSent($data) {
@@ -187,6 +194,7 @@ function sendWhatsAppResponse($phone, $message) {
 function handleIncomingWhatsApp($from, $text) {
     $line = trim(strtok($text, "\n"));
     $lower = strtolower($line);
+    
     if ($lower === 'help') {
         $line = '/help';
     } elseif ($lower === 'menu') {
@@ -281,38 +289,14 @@ function handleIncomingWhatsApp($from, $text) {
         case '/pppoe_profile_list':
             handleWhatsAppPppoeProfileList($from);
             break;
-        case '/pppoe_profile_add':
-            handleWhatsAppPppoeProfileAdd($from, $args);
-            break;
-        case '/pppoe_profile_edit':
-            handleWhatsAppPppoeProfileEdit($from, $args);
-            break;
-        case '/pppoe_profile_del':
-            handleWhatsAppPppoeProfileDel($from, $args);
-            break;
         case '/hs_list':
             handleWhatsAppHotspotList($from);
             break;
         case '/hs_add':
             handleWhatsAppHotspotAdd($from, $args);
             break;
-        case '/hs_edit':
-            handleWhatsAppHotspotEdit($from, $args);
-            break;
         case '/hs_del':
             handleWhatsAppHotspotDel($from, $args);
-            break;
-        case '/hs_profile_list':
-            handleWhatsAppHotspotProfileList($from);
-            break;
-        case '/hs_profile_add':
-            handleWhatsAppHotspotProfileAdd($from, $args);
-            break;
-        case '/hs_profile_edit':
-            handleWhatsAppHotspotProfileEdit($from, $args);
-            break;
-        case '/hs_profile_del':
-            handleWhatsAppHotspotProfileDel($from, $args);
             break;
         default:
             handleWhatsAppRegularMessage($from);
@@ -353,17 +337,9 @@ function handleWhatsAppHelp($phone) {
         $message .= "/pppoe_disable <user>\n";
         $message .= "/pppoe_enable <user>\n";
         $message .= "/pppoe_profile_list\n";
-        $message .= "/pppoe_profile_add <name> [rate]\n";
-        $message .= "/pppoe_profile_edit <id> <name> [rate]\n";
-        $message .= "/pppoe_profile_del <id>\n";
         $message .= "/hs_list - Daftar user Hotspot\n";
         $message .= "/hs_add <user> <pass> <profile>\n";
-        $message .= "/hs_edit <user> <pass> <profile>\n";
         $message .= "/hs_del <user>\n";
-        $message .= "/hs_profile_list\n";
-        $message .= "/hs_profile_add <name> [rate] [shared]\n";
-        $message .= "/hs_profile_edit <id> <name> [rate] [shared]\n";
-        $message .= "/hs_profile_del <id>\n";
     }
     
     sendWhatsAppResponse($phone, $message);
@@ -378,7 +354,6 @@ function handleWhatsAppMenu($phone) {
     $message = "Menu Admin:\n";
     $message .= "1) Billing: /billing_cek, /billing_invoice, /billing_lunas\n";
     $message .= "2) MikroTik: /pppoe_list, /pppoe_add, /hs_list, /hs_add\n";
-    $message .= "3) Profile: /pppoe_profile_list, /hs_profile_list\n";
     $message .= "Ketik /help untuk daftar lengkap.";
     sendWhatsAppResponse($phone, $message);
 }
@@ -396,6 +371,7 @@ function handleWhatsAppPayInvoice($phone, $invoiceId) {
         $invoice['amount'],
         $invoice['customer_name'] ?? '-',
         $invoice['customer_phone'] ?? '',
+        $invoice['due_date'],
         $gateway
     );
     
@@ -740,6 +716,29 @@ function handleWhatsAppInvoiceDelete($phone, $args) {
     sendWhatsAppResponse($phone, "Invoice {$invoiceNumber} berhasil dihapus.");
 }
 
+function handleWhatsAppPppoeProfileList($phone) {
+    if (!isWhatsAppAdmin($phone)) {
+        sendWhatsAppResponse($phone, "Perintah MikroTik hanya untuk admin.");
+        return;
+    }
+    
+    $profiles = mikrotikGetProfiles();
+    if (empty($profiles)) {
+        sendWhatsAppResponse($phone, "Tidak ada profile PPPoE atau gagal mengambil data.");
+        return;
+    }
+    
+    $message = "Profile PPPoE\n\n";
+    foreach ($profiles as $p) {
+        $id = $p['.id'] ?? '-';
+        $name = $p['name'] ?? '-';
+        $rate = $p['rate-limit'] ?? '-';
+        $message .= "{$id} | {$name} | {$rate}\n";
+    }
+    
+    sendWhatsAppResponse($phone, $message);
+}
+
 function handleWhatsAppMikrotikSetProfile($phone, $args) {
     if (!isWhatsAppAdmin($phone)) {
         sendWhatsAppResponse($phone, "Perintah MikroTik hanya untuk admin.");
@@ -1033,101 +1032,6 @@ function handleWhatsAppPppoeEnable($phone, $args) {
     }
 }
 
-function handleWhatsAppPppoeProfileList($phone) {
-    if (!isWhatsAppAdmin($phone)) {
-        sendWhatsAppResponse($phone, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $profiles = mikrotikGetProfiles();
-    if (empty($profiles)) {
-        sendWhatsAppResponse($phone, "Tidak ada profile PPPoE atau gagal mengambil data.");
-        return;
-    }
-    
-    $message = "Profile PPPoE\n\n";
-    foreach ($profiles as $p) {
-        $id = $p['.id'] ?? '-';
-        $name = $p['name'] ?? '-';
-        $rate = $p['rate-limit'] ?? '-';
-        $message .= "{$id} | {$name} | {$rate}\n";
-    }
-    
-    sendWhatsAppResponse($phone, $message);
-}
-
-function handleWhatsAppPppoeProfileAdd($phone, $args) {
-    if (!isWhatsAppAdmin($phone)) {
-        sendWhatsAppResponse($phone, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $parts = preg_split('/\s+/', trim($args));
-    if (count($parts) < 1 || $parts[0] === '') {
-        sendWhatsAppResponse($phone, "Format: /pppoe_profile_add <name> [rate]");
-        return;
-    }
-    
-    $name = $parts[0];
-    $rate = $parts[1] ?? '';
-    
-    $result = mikrotikAddPppoeProfile($name, $rate);
-    if ($result['success']) {
-        sendWhatsAppResponse($phone, "Profile PPPoE {$name} berhasil ditambahkan.");
-    } else {
-        sendWhatsAppResponse($phone, "Gagal menambah profile PPPoE {$name}: {$result['message']}");
-    }
-}
-
-function handleWhatsAppPppoeProfileEdit($phone, $args) {
-    if (!isWhatsAppAdmin($phone)) {
-        sendWhatsAppResponse($phone, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $parts = preg_split('/\s+/', trim($args));
-    if (count($parts) < 2) {
-        sendWhatsAppResponse($phone, "Format: /pppoe_profile_edit <id> <name> [rate]");
-        return;
-    }
-    
-    $id = $parts[0];
-    $name = $parts[1];
-    $rate = $parts[2] ?? null;
-    
-    $data = ['name' => $name];
-    if ($rate !== null && $rate !== '') {
-        $data['rate_limit'] = $rate;
-    }
-    
-    $result = mikrotikUpdatePppoeProfile($id, $data);
-    if ($result['success']) {
-        sendWhatsAppResponse($phone, "Profile PPPoE {$name} berhasil diperbarui.");
-    } else {
-        sendWhatsAppResponse($phone, "Gagal memperbarui profile PPPoE {$name}: {$result['message']}");
-    }
-}
-
-function handleWhatsAppPppoeProfileDel($phone, $args) {
-    if (!isWhatsAppAdmin($phone)) {
-        sendWhatsAppResponse($phone, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $id = trim($args);
-    if ($id === '') {
-        sendWhatsAppResponse($phone, "Format: /pppoe_profile_del <id>");
-        return;
-    }
-    
-    $result = mikrotikDeletePppoeProfile($id);
-    if ($result['success']) {
-        sendWhatsAppResponse($phone, "Profile PPPoE berhasil dihapus.");
-    } else {
-        sendWhatsAppResponse($phone, "Gagal menghapus profile PPPoE: {$result['message']}");
-    }
-}
-
 function handleWhatsAppHotspotList($phone) {
     if (!isWhatsAppAdmin($phone)) {
         sendWhatsAppResponse($phone, "Perintah MikroTik hanya untuk admin.");
@@ -1183,36 +1087,6 @@ function handleWhatsAppHotspotAdd($phone, $args) {
     }
 }
 
-function handleWhatsAppHotspotEdit($phone, $args) {
-    if (!isWhatsAppAdmin($phone)) {
-        sendWhatsAppResponse($phone, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $parts = preg_split('/\s+/', trim($args));
-    if (count($parts) < 3) {
-        sendWhatsAppResponse($phone, "Format: /hs_edit <user> <pass> <profile>");
-        return;
-    }
-    
-    $user = $parts[0];
-    $pass = $parts[1];
-    $profile = $parts[2];
-    
-    $hotspotUser = getHotspotUserByName($user);
-    if (!$hotspotUser || empty($hotspotUser['.id'])) {
-        sendWhatsAppResponse($phone, "User Hotspot {$user} tidak ditemukan.");
-        return;
-    }
-    
-    $result = mikrotikUpdateHotspotUser($hotspotUser['.id'], ['password' => $pass, 'profile' => $profile]);
-    if ($result['success']) {
-        sendWhatsAppResponse($phone, "User Hotspot {$user} berhasil diperbarui.");
-    } else {
-        sendWhatsAppResponse($phone, "Gagal memperbarui user Hotspot {$user}: {$result['message']}");
-    }
-}
-
 function handleWhatsAppHotspotDel($phone, $args) {
     if (!isWhatsAppAdmin($phone)) {
         sendWhatsAppResponse($phone, "Perintah MikroTik hanya untuk admin.");
@@ -1231,115 +1105,4 @@ function handleWhatsAppHotspotDel($phone, $args) {
     } else {
         sendWhatsAppResponse($phone, "Gagal menghapus user Hotspot {$user}.");
     }
-}
-
-function handleWhatsAppHotspotProfileList($phone) {
-    if (!isWhatsAppAdmin($phone)) {
-        sendWhatsAppResponse($phone, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $profiles = mikrotikGetHotspotProfiles();
-    if (empty($profiles)) {
-        sendWhatsAppResponse($phone, "Tidak ada profile Hotspot atau gagal mengambil data.");
-        return;
-    }
-    
-    $message = "Profile Hotspot\n\n";
-    foreach ($profiles as $p) {
-        $id = $p['.id'] ?? '-';
-        $name = $p['name'] ?? '-';
-        $rate = $p['rate-limit'] ?? '-';
-        $shared = $p['shared-users'] ?? '-';
-        $message .= "{$id} | {$name} | {$rate} | {$shared}\n";
-    }
-    
-    sendWhatsAppResponse($phone, $message);
-}
-
-function handleWhatsAppHotspotProfileAdd($phone, $args) {
-    if (!isWhatsAppAdmin($phone)) {
-        sendWhatsAppResponse($phone, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $parts = preg_split('/\s+/', trim($args));
-    if (count($parts) < 1 || $parts[0] === '') {
-        sendWhatsAppResponse($phone, "Format: /hs_profile_add <name> [rate] [shared]");
-        return;
-    }
-    
-    $name = $parts[0];
-    $rate = $parts[1] ?? '';
-    $shared = $parts[2] ?? '';
-    
-    $result = mikrotikAddHotspotProfile($name, $rate, $shared);
-    if ($result['success']) {
-        sendWhatsAppResponse($phone, "Profile Hotspot {$name} berhasil ditambahkan.");
-    } else {
-        sendWhatsAppResponse($phone, "Gagal menambah profile Hotspot {$name}: {$result['message']}");
-    }
-}
-
-function handleWhatsAppHotspotProfileEdit($phone, $args) {
-    if (!isWhatsAppAdmin($phone)) {
-        sendWhatsAppResponse($phone, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $parts = preg_split('/\s+/', trim($args));
-    if (count($parts) < 2) {
-        sendWhatsAppResponse($phone, "Format: /hs_profile_edit <id> <name> [rate] [shared]");
-        return;
-    }
-    
-    $id = $parts[0];
-    $name = $parts[1];
-    $rate = $parts[2] ?? null;
-    $shared = $parts[3] ?? null;
-    
-    $data = ['name' => $name];
-    if ($rate !== null && $rate !== '') {
-        $data['rate_limit'] = $rate;
-    }
-    if ($shared !== null && $shared !== '') {
-        $data['shared_users'] = $shared;
-    }
-    
-    $result = mikrotikUpdateHotspotProfile($id, $data);
-    if ($result['success']) {
-        sendWhatsAppResponse($phone, "Profile Hotspot {$name} berhasil diperbarui.");
-    } else {
-        sendWhatsAppResponse($phone, "Gagal memperbarui profile Hotspot {$name}: {$result['message']}");
-    }
-}
-
-function handleWhatsAppHotspotProfileDel($phone, $args) {
-    if (!isWhatsAppAdmin($phone)) {
-        sendWhatsAppResponse($phone, "Perintah MikroTik hanya untuk admin.");
-        return;
-    }
-    
-    $id = trim($args);
-    if ($id === '') {
-        sendWhatsAppResponse($phone, "Format: /hs_profile_del <id>");
-        return;
-    }
-    
-    $result = mikrotikDeleteHotspotProfile($id);
-    if ($result['success']) {
-        sendWhatsAppResponse($phone, "Profile Hotspot berhasil dihapus.");
-    } else {
-        sendWhatsAppResponse($phone, "Gagal menghapus profile Hotspot: {$result['message']}");
-    }
-}
-
-function getHotspotUserByName($name) {
-    $users = mikrotikGetHotspotUsers();
-    foreach ($users as $u) {
-        if (($u['name'] ?? '') === $name) {
-            return $u;
-        }
-    }
-    return null;
 }

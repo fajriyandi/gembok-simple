@@ -43,17 +43,17 @@ $monthlyRevenue = [];
 for ($i = 5; $i >= 0; $i--) {
     $month = date('Y-m', strtotime("-{$i} months"));
     $monthName = date('M Y', strtotime("-{$i} months"));
-    
+
     $revenue = fetchOne("
         SELECT SUM(amount) as total 
         FROM invoices 
         WHERE status = 'paid' 
         AND DATE_FORMAT(paid_at, '%Y-%m') = ?
     ", [$month])['total'] ?? 0;
-    
+
     $monthlyRevenue[] = [
         'month' => $monthName,
-        'revenue' => (float)$revenue
+        'revenue' => (float) $revenue
     ];
 }
 
@@ -62,16 +62,16 @@ $monthlyCustomers = [];
 for ($i = 5; $i >= 0; $i--) {
     $month = date('Y-m', strtotime("-{$i} months"));
     $monthName = date('M Y', strtotime("-{$i} months"));
-    
+
     $count = fetchOne("
         SELECT COUNT(*) as total 
         FROM customers 
         WHERE DATE_FORMAT(created_at, '%Y-%m') = ?
     ", [$month])['total'] ?? 0;
-    
+
     $monthlyCustomers[] = [
         'month' => $monthName,
-        'count' => (int)$count
+        'count' => (int) $count
     ];
 }
 
@@ -90,85 +90,208 @@ $dueSoonInvoices = fetchOne("
     AND due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
 ")['total'] ?? 0;
 
+// Get Hotspot data for Mikhmon v3 style dashboard
+$hotspotUsers = mikrotikGetHotspotUsers();
+$hotspotActive = mikrotikGetHotspotActive();
+$routerResource = mikrotikGetSystemResource();
+$hotspotTotalUsers = count($hotspotUsers);
+$hotspotActiveCount = count($hotspotActive);
+$interfaces = mikrotikGetInterfaces();
+
 ob_start();
 ?>
 
-<!-- Stats Grid -->
+<!-- ==================== MIKHMON V3 DASHBOARD SECTION ==================== -->
+
+<!-- Router Info Bar -->
+<div
+    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px;">
+    <!-- Date/Time & Uptime -->
+    <div class="card" style="margin-bottom: 0;">
+        <div style="padding: 15px; display: flex; align-items: center; gap: 15px;">
+            <div
+                style="width: 45px; height: 45px; border-radius: 10px; background: linear-gradient(135deg, var(--neon-cyan), #0088cc); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="fas fa-calendar-alt" style="color: #fff; font-size: 1.2rem;"></i>
+            </div>
+            <div>
+                <div style="color: var(--text-primary); font-weight: 600;"><?php echo date('d M Y H:i:s'); ?></div>
+                <div style="color: var(--text-muted); font-size: 0.85rem;">Uptime:
+                    <?php echo htmlspecialchars($routerResource['uptime']); ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Board Info -->
+    <div class="card" style="margin-bottom: 0;">
+        <div style="padding: 15px; display: flex; align-items: center; gap: 15px;">
+            <div
+                style="width: 45px; height: 45px; border-radius: 10px; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="fas fa-info-circle" style="color: #fff; font-size: 1.2rem;"></i>
+            </div>
+            <div>
+                <div style="color: var(--text-primary); font-weight: 600;">
+                    <?php echo htmlspecialchars($routerResource['board-name']); ?>
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.85rem;">RouterOS
+                    <?php echo htmlspecialchars($routerResource['version']); ?>
+                    (<?php echo htmlspecialchars($routerResource['architecture-name']); ?>)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CPU / Memory -->
+    <div class="card" style="margin-bottom: 0;">
+        <div style="padding: 15px; display: flex; align-items: center; gap: 15px;">
+            <div
+                style="width: 45px; height: 45px; border-radius: 10px; background: linear-gradient(135deg, #f59e0b, #ef4444); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="fas fa-server" style="color: #fff; font-size: 1.2rem;"></i>
+            </div>
+            <div>
+                <div style="color: var(--text-primary); font-weight: 600;">
+                    CPU: <span
+                        style="color: <?php echo $routerResource['cpu-load'] > 80 ? '#ef4444' : ($routerResource['cpu-load'] > 50 ? '#f59e0b' : 'var(--neon-green)'); ?>;"><?php echo $routerResource['cpu-load']; ?>%</span>
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.85rem;">Free Memory:
+                    <?php echo formatBytes($routerResource['free-memory']); ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hotspot Stats (4 colored boxes like Mikhmon v3) -->
+<div
+    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px;">
+    <a href="hotspot-user.php" style="text-decoration: none;">
+        <div style="background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 12px; padding: 20px; text-align: center; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;"
+            onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 25px rgba(59,130,246,0.4)';"
+            onmouseout="this.style.transform=''; this.style.boxShadow='';">
+            <div style="font-size: 2.2rem; font-weight: 800; color: #fff;"><?php echo $hotspotActiveCount; ?></div>
+            <div style="color: rgba(255,255,255,0.85); font-size: 0.85rem; margin-top: 5px;"><i
+                    class="fas fa-laptop"></i> Hotspot Active</div>
+        </div>
+    </a>
+    <a href="hotspot-user.php" style="text-decoration: none;">
+        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); border-radius: 12px; padding: 20px; text-align: center; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;"
+            onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 25px rgba(34,197,94,0.4)';"
+            onmouseout="this.style.transform=''; this.style.boxShadow='';">
+            <div style="font-size: 2.2rem; font-weight: 800; color: #fff;"><?php echo $hotspotTotalUsers; ?></div>
+            <div style="color: rgba(255,255,255,0.85); font-size: 0.85rem; margin-top: 5px;"><i
+                    class="fas fa-users"></i> Hotspot Users</div>
+        </div>
+    </a>
+    <a href="hotspot-user.php" style="text-decoration: none;">
+        <div style="background: linear-gradient(135deg, #eab308, #ca8a04); border-radius: 12px; padding: 20px; text-align: center; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;"
+            onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 25px rgba(234,179,8,0.4)';"
+            onmouseout="this.style.transform=''; this.style.boxShadow='';">
+            <div style="font-size: 2.2rem; font-weight: 800; color: #fff;"><i class="fas fa-user-plus"></i></div>
+            <div style="color: rgba(255,255,255,0.85); font-size: 0.85rem; margin-top: 5px;">Add User</div>
+        </div>
+    </a>
+    <a href="hotspot-user.php" style="text-decoration: none;">
+        <div style="background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 12px; padding: 20px; text-align: center; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;"
+            onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 25px rgba(239,68,68,0.4)';"
+            onmouseout="this.style.transform=''; this.style.boxShadow='';">
+            <div style="font-size: 2.2rem; font-weight: 800; color: #fff;"><i class="fas fa-user-plus"></i></div>
+            <div style="color: rgba(255,255,255,0.85); font-size: 0.85rem; margin-top: 5px;">Generate</div>
+        </div>
+    </a>
+</div>
+
+<!-- Traffic Monitor + Hotspot Log (2-column layout) -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;" id="mikhmon-main-grid">
+    <!-- Traffic Monitor -->
+    <div class="card" style="margin-bottom: 0;">
+        <div class="card-header"
+            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <h3 class="card-title"><i class="fas fa-chart-area"></i> Traffic Monitor</h3>
+            <select id="interfaceSelector" onchange="changeInterface(this.value)"
+                style="background: var(--card-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 10px; font-size: 0.85rem;">
+                <?php foreach ($interfaces as $iface): ?>
+                    <option value="<?php echo htmlspecialchars($iface['name'] ?? ''); ?>">
+                        <?php echo htmlspecialchars($iface['name'] ?? ''); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div style="padding: 15px;">
+            <canvas id="trafficChart" height="250"></canvas>
+        </div>
+    </div>
+
+    <!-- Hotspot Log -->
+    <div class="card" style="margin-bottom: 0;">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-align-justify"></i> Hotspot Log</h3>
+        </div>
+        <div style="padding: 10px; max-height: 380px; overflow-y: auto;" id="hotspotLogContainer">
+            <table class="table" style="font-size: 0.8rem;">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>User (IP)</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody id="hotspotLogBody">
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                            <i class="fas fa-spinner fa-spin"></i> Loading...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- ==================== ISP BILLING SECTION ==================== -->
+
+<!-- Alert for overdue invoices -->
+<?php if ($overdueInvoices > 0 || $dueSoonInvoices > 0): ?>
+    <div class="alert alert-warning" style="margin-bottom: 20px;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>
+            <?php if ($overdueInvoices > 0): ?>
+                <strong><?php echo $overdueInvoices; ?></strong> invoice sudah melewati jatuh tempo.
+            <?php endif; ?>
+            <?php if ($dueSoonInvoices > 0): ?>
+                <strong><?php echo $dueSoonInvoices; ?></strong> invoice akan jatuh tempo dalam 7 hari.
+            <?php endif; ?>
+            <a href="invoices.php" style="color: inherit; text-decoration: underline; margin-left: 10px;">Lihat Invoice</a>
+        </span>
+    </div>
+<?php endif; ?>
+
+<!-- ISP Stats Grid -->
 <div class="stats-grid">
     <div class="stat-card">
-        <div class="stat-icon cyan">
-            <i class="fas fa-users"></i>
-        </div>
+        <div class="stat-icon cyan"><i class="fas fa-users"></i></div>
         <div class="stat-info">
             <h3><?php echo $stats['totalCustomers']; ?></h3>
             <p>Total Pelanggan</p>
         </div>
     </div>
-    
     <div class="stat-card">
-        <div class="stat-icon green">
-            <i class="fas fa-check-circle"></i>
-        </div>
+        <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
         <div class="stat-info">
             <h3><?php echo $stats['activeCustomers']; ?></h3>
             <p>Pelanggan Aktif</p>
         </div>
     </div>
-    
     <div class="stat-card">
-        <div class="stat-icon orange">
-            <i class="fas fa-ban"></i>
-        </div>
+        <div class="stat-icon orange"><i class="fas fa-ban"></i></div>
         <div class="stat-info">
             <h3><?php echo $stats['isolatedCustomers']; ?></h3>
             <p>Pelanggan Isolir</p>
         </div>
     </div>
-    
     <div class="stat-card">
-        <div class="stat-icon purple">
-            <i class="fas fa-box"></i>
-        </div>
-        <div class="stat-info">
-            <h3><?php echo $stats['totalPackages']; ?></h3>
-            <p>Total Paket</p>
-        </div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-icon cyan">
-            <i class="fas fa-file-invoice"></i>
-        </div>
-        <div class="stat-info">
-            <h3><?php echo $stats['totalInvoices']; ?></h3>
-            <p>Total Invoice</p>
-        </div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-icon green">
-            <i class="fas fa-check"></i>
-        </div>
-        <div class="stat-info">
-            <h3><?php echo $stats['paidInvoices']; ?></h3>
-            <p>Invoice Lunas</p>
-        </div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-icon yellow">
-            <i class="fas fa-clock"></i>
-        </div>
-        <div class="stat-info">
-            <h3><?php echo $stats['pendingInvoices']; ?></h3>
-            <p>Invoice Pending</p>
-        </div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-icon pink">
-            <i class="fas fa-wallet"></i>
-        </div>
+        <div class="stat-icon pink"><i class="fas fa-wallet"></i></div>
         <div class="stat-info">
             <h3><?php echo formatCurrency($stats['totalRevenue']); ?></h3>
             <p>Total Pendapatan</p>
@@ -176,21 +299,6 @@ ob_start();
     </div>
 </div>
 
-<!-- Alert for overdue invoices -->
-<?php if ($overdueInvoices > 0 || $dueSoonInvoices > 0): ?>
-<div class="alert alert-warning" style="margin-bottom: 20px;">
-    <i class="fas fa-exclamation-triangle"></i>
-    <span>
-        <?php if ($overdueInvoices > 0): ?>
-            <strong><?php echo $overdueInvoices; ?></strong> invoice sudah melewati jatuh tempo.
-        <?php endif; ?>
-        <?php if ($dueSoonInvoices > 0): ?>
-            <strong><?php echo $dueSoonInvoices; ?></strong> invoice akan jatuh tempo dalam 7 hari.
-        <?php endif; ?>
-        <a href="invoices.php" style="color: inherit; text-decoration: underline; margin-left: 10px;">Lihat Invoice</a>
-    </span>
-</div>
-<?php endif; ?>
 
 <!-- Quick Actions -->
 <div class="card">
@@ -202,16 +310,13 @@ ob_start();
             <i class="fas fa-users"></i> Pelanggan
         </a>
         <a href="packages.php" class="btn btn-secondary" style="justify-content: center;">
-            <i class="fas fa-box"></i> Paket
+            <i class="fas fa-box"></i> Paket PPPOE
         </a>
         <a href="invoices.php" class="btn btn-secondary" style="justify-content: center;">
             <i class="fas fa-file-invoice"></i> Invoice
         </a>
         <a href="mikrotik.php" class="btn btn-secondary" style="justify-content: center;">
-            <i class="fas fa-network-wired"></i> PPPoE
-        </a>
-        <a href="hotspot.php" class="btn btn-secondary" style="justify-content: center;">
-            <i class="fas fa-wifi"></i> Hotspot
+            <i class="fas fa-network-wired"></i> Data PPPOE
         </a>
         <a href="genieacs.php" class="btn btn-secondary" style="justify-content: center;">
             <i class="fas fa-satellite-dish"></i> GenieACS
@@ -237,7 +342,7 @@ ob_start();
         </div>
         <canvas id="revenueChart" height="250"></canvas>
     </div>
-    
+
     <!-- Customer Growth Chart -->
     <div class="card">
         <div class="card-header">
@@ -272,21 +377,21 @@ ob_start();
                 </tr>
             <?php else: ?>
                 <?php foreach ($recentInvoices as $invoice): ?>
-                <tr>
-                    <td><code><?php echo htmlspecialchars($invoice['invoice_number']); ?></code></td>
-                    <td><?php echo htmlspecialchars($invoice['customer_name'] ?? '-'); ?></td>
-                    <td><?php echo formatCurrency($invoice['amount']); ?></td>
-                    <td>
-                        <?php if ($invoice['status'] === 'paid'): ?>
-                            <span class="badge badge-success">Lunas</span>
-                        <?php elseif ($invoice['status'] === 'unpaid'): ?>
-                            <span class="badge badge-warning">Belum Bayar</span>
-                        <?php else: ?>
-                            <span class="badge badge-danger">Batal</span>
-                        <?php endif; ?>
-                    </td>
-                    <td><?php echo formatDate($invoice['created_at']); ?></td>
-                </tr>
+                    <tr>
+                        <td><code><?php echo htmlspecialchars($invoice['invoice_number']); ?></code></td>
+                        <td><?php echo htmlspecialchars($invoice['customer_name'] ?? '-'); ?></td>
+                        <td><?php echo formatCurrency($invoice['amount']); ?></td>
+                        <td>
+                            <?php if ($invoice['status'] === 'paid'): ?>
+                                <span class="badge badge-success">Lunas</span>
+                            <?php elseif ($invoice['status'] === 'unpaid'): ?>
+                                <span class="badge badge-warning">Belum Bayar</span>
+                            <?php else: ?>
+                                <span class="badge badge-danger">Batal</span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?php echo formatDate($invoice['created_at']); ?></td>
+                    </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
         </tbody>
@@ -318,19 +423,19 @@ ob_start();
                 </tr>
             <?php else: ?>
                 <?php foreach ($recentCustomers as $customer): ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($customer['name']); ?></td>
-                    <td><code><?php echo htmlspecialchars($customer['pppoe_username']); ?></code></td>
-                    <td><?php echo htmlspecialchars($customer['package_name'] ?? '-'); ?></td>
-                    <td>
-                        <?php if ($customer['status'] === 'active'): ?>
-                            <span class="badge badge-success">Aktif</span>
-                        <?php else: ?>
-                            <span class="badge badge-warning">Isolir</span>
-                        <?php endif; ?>
-                    </td>
-                    <td><?php echo formatDate($customer['created_at']); ?></td>
-                </tr>
+                    <tr>
+                        <td><?php echo htmlspecialchars($customer['name']); ?></td>
+                        <td><code><?php echo htmlspecialchars($customer['pppoe_username']); ?></code></td>
+                        <td><?php echo htmlspecialchars($customer['package_name'] ?? '-'); ?></td>
+                        <td>
+                            <?php if ($customer['status'] === 'active'): ?>
+                                <span class="badge badge-success">Aktif</span>
+                            <?php else: ?>
+                                <span class="badge badge-warning">Isolir</span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?php echo formatDate($customer['created_at']); ?></td>
+                    </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
         </tbody>
@@ -340,88 +445,265 @@ ob_start();
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Revenue Chart
-const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-new Chart(revenueCtx, {
-    type: 'line',
-    data: {
-        labels: <?php echo json_encode(array_column($monthlyRevenue, 'month')); ?>,
-        datasets: [{
-            label: 'Pendapatan',
-            data: <?php echo json_encode(array_column($monthlyRevenue, 'revenue')); ?>,
-            borderColor: '#00f5ff',
-            backgroundColor: 'rgba(0, 245, 255, 0.1)',
-            fill: true,
-            tension: 0.4
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: { display: false }
+    // Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: <?php echo json_encode(array_column($monthlyRevenue, 'month')); ?>,
+            datasets: [{
+                label: 'Pendapatan',
+                data: <?php echo json_encode(array_column($monthlyRevenue, 'revenue')); ?>,
+                borderColor: '#00f5ff',
+                backgroundColor: 'rgba(0, 245, 255, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
         },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    callback: function(value) {
-                        return 'Rp ' + value.toLocaleString('id-ID');
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function (value) {
+                            return 'Rp ' + value.toLocaleString('id-ID');
+                        },
+                        color: '#9ca3af'
                     },
-                    color: '#9ca3af'
+                    grid: { color: 'rgba(255,255,255,0.1)' }
                 },
-                grid: { color: 'rgba(255,255,255,0.1)' }
-            },
-            x: {
-                ticks: { color: '#9ca3af' },
-                grid: { color: 'rgba(255,255,255,0.1)' }
+                x: {
+                    ticks: { color: '#9ca3af' },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
+                }
             }
         }
-    }
-});
+    });
 
-// Customer Chart
-const customerCtx = document.getElementById('customerChart').getContext('2d');
-new Chart(customerCtx, {
-    type: 'bar',
-    data: {
-        labels: <?php echo json_encode(array_column($monthlyCustomers, 'month')); ?>,
-        datasets: [{
-            label: 'Pelanggan Baru',
-            data: <?php echo json_encode(array_column($monthlyCustomers, 'count')); ?>,
-            backgroundColor: 'rgba(191, 0, 255, 0.5)',
-            borderColor: '#bf00ff',
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: { display: false }
+    // Customer Chart
+    const customerCtx = document.getElementById('customerChart').getContext('2d');
+    new Chart(customerCtx, {
+        type: 'bar',
+        data: {
+            labels: <?php echo json_encode(array_column($monthlyCustomers, 'month')); ?>,
+            datasets: [{
+                label: 'Pelanggan Baru',
+                data: <?php echo json_encode(array_column($monthlyCustomers, 'count')); ?>,
+                backgroundColor: 'rgba(191, 0, 255, 0.5)',
+                borderColor: '#bf00ff',
+                borderWidth: 1
+            }]
         },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: { color: '#9ca3af', stepSize: 1 },
-                grid: { color: 'rgba(255,255,255,0.1)' }
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
             },
-            x: {
-                ticks: { color: '#9ca3af' },
-                grid: { color: 'rgba(255,255,255,0.1)' }
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#9ca3af', stepSize: 1 },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
+                },
+                x: {
+                    ticks: { color: '#9ca3af' },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
+                }
             }
         }
+    });
+</script>
+
+<!-- Traffic Monitor & Hotspot Log Scripts -->
+<script>
+    // ==================== TRAFFIC MONITOR ====================
+    const MAX_POINTS = 20;
+    let trafficData = { labels: [], tx: [], rx: [] };
+    let currentInterface = document.getElementById('interfaceSelector')?.value || 'ether1';
+    let trafficChart;
+
+    function formatBits(bits) {
+        const sizes = ['bps', 'Kbps', 'Mbps', 'Gbps', 'Tbps'];
+        if (bits === 0) return '0 bps';
+        const i = Math.floor(Math.log(bits) / Math.log(1024));
+        return parseFloat((bits / Math.pow(1024, i)).toFixed(2)) + ' ' + sizes[i];
     }
-});
+
+    function initTrafficChart() {
+        const ctx = document.getElementById('trafficChart');
+        if (!ctx) return;
+        trafficChart = new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Tx (Upload)',
+                    data: [],
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 2,
+                    borderWidth: 2,
+                }, {
+                    label: 'Rx (Download)',
+                    data: [],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 2,
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                animation: { duration: 300 },
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: {
+                        labels: { color: '#9ca3af', usePointStyle: true, padding: 15 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                return ctx.dataset.label + ': ' + formatBits(ctx.parsed.y);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function (v) { return formatBits(v); },
+                            color: '#9ca3af',
+                            maxTicksLimit: 6
+                        },
+                        grid: { color: 'rgba(255,255,255,0.06)' }
+                    },
+                    x: {
+                        ticks: { color: '#9ca3af', maxTicksLimit: 8, maxRotation: 0 },
+                        grid: { color: 'rgba(255,255,255,0.06)' }
+                    }
+                }
+            }
+        });
+    }
+
+    function fetchTraffic() {
+        fetch('../api/traffic.php?interface=' + encodeURIComponent(currentInterface))
+            .then(r => r.json())
+            .then(data => {
+                if (!data || data.length < 2) return;
+                const now = new Date();
+                const label = now.getHours().toString().padStart(2, '0') + ':' +
+                    now.getMinutes().toString().padStart(2, '0') + ':' +
+                    now.getSeconds().toString().padStart(2, '0');
+
+                const tx = parseInt(data[0].data) || 0;
+                const rx = parseInt(data[1].data) || 0;
+
+                trafficChart.data.labels.push(label);
+                trafficChart.data.datasets[0].data.push(tx);
+                trafficChart.data.datasets[1].data.push(rx);
+
+                if (trafficChart.data.labels.length > MAX_POINTS) {
+                    trafficChart.data.labels.shift();
+                    trafficChart.data.datasets[0].data.shift();
+                    trafficChart.data.datasets[1].data.shift();
+                }
+
+                trafficChart.update('none');
+            })
+            .catch(err => console.error('Traffic fetch error:', err));
+    }
+
+    function changeInterface(iface) {
+        currentInterface = iface;
+        // Reset chart data
+        trafficChart.data.labels = [];
+        trafficChart.data.datasets[0].data = [];
+        trafficChart.data.datasets[1].data = [];
+        trafficChart.update('none');
+        fetchTraffic();
+    }
+
+    // ==================== HOTSPOT LOG ====================
+    function loadHotspotLog() {
+        fetch('../api/hotspot-log.php?limit=20')
+            .then(r => r.json())
+            .then(logs => {
+                const tbody = document.getElementById('hotspotLogBody');
+                if (!tbody) return;
+
+                if (!logs || logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:20px;"><i class="fas fa-info-circle"></i> No hotspot log entries</td></tr>';
+                    return;
+                }
+
+                let html = '';
+                logs.forEach(log => {
+                    html += '<tr>' +
+                        '<td style="white-space:nowrap;"><small>' + escapeHtml(log.time) + '</small></td>' +
+                        '<td><small><strong>' + escapeHtml(log.user) + '</strong></small></td>' +
+                        '<td><small>' + escapeHtml(log.message) + '</small></td>' +
+                        '</tr>';
+                });
+                tbody.innerHTML = html;
+            })
+            .catch(err => {
+                console.error('Hotspot log error:', err);
+                const tbody = document.getElementById('hotspotLogBody');
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);"><i class="fas fa-exclamation-triangle"></i> Failed to load</td></tr>';
+                }
+            });
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '-';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // ==================== INIT ====================
+    document.addEventListener('DOMContentLoaded', function () {
+        initTrafficChart();
+        fetchTraffic();
+        setInterval(fetchTraffic, 3000);
+
+        loadHotspotLog();
+        setInterval(loadHotspotLog, 10000);
+    });
 </script>
 
 <style>
-.alert {
-    padding: 15px 20px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.alert-warning { background: rgba(255, 193, 7, 0.1); border: 1px solid var(--neon-orange); color: var(--neon-orange); }
+    .alert {
+        padding: 15px 20px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .alert-warning {
+        background: rgba(255, 193, 7, 0.1);
+        border: 1px solid var(--neon-orange);
+        color: var(--neon-orange);
+    }
+
+    /* Responsive: stack 2-column grid on mobile */
+    @media (max-width: 768px) {
+        #mikhmon-main-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
 </style>
 
 <?php

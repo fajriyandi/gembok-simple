@@ -21,3 +21,224 @@
 [2026-02-15 21:41:43] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.odp_links' doesn't exist
 [2026-02-15 21:47:00] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.odps' doesn't exist
 [2026-02-15 21:47:00] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.odp_links' doesn't exist
+[2026-02-16 11:23:11] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-16 11:23:16] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-16 11:23:21] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-16 11:23:26] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-16 11:23:48] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-16 11:23:53] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-16 11:23:58] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-16 11:24:03] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 13:34:48] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 13:34:48] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 13:34:48] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 13:34:48] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 13:34:48] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 13:34:48] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 13:34:48] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 13:34:48] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 13:34:48] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 13:34:48] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 14:05:58] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 14:05:58] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 14:05:58] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 14:05:58] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 14:05:58] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 14:05:58] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 14:05:58] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 14:05:58] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 14:05:58] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 14:05:58] ERROR: Insert Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.vouchers' doesn't exist
+[2026-02-17 16:46:13] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.hotspot_sales' doesn't exist
+[2026-02-17 16:46:13] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.hotspot_sales' doesn't exist
+[2026-02-17 16:53:54] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.hotspot_sales' doesn't exist
+[2026-02-17 16:53:54] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'marwan_db.hotspot_sales' doesn't exist
+[2026-02-17 19:36:30] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 19:36:35] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 19:36:40] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 19:36:45] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 19:36:51] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 19:36:56] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 19:37:01] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 19:37:06] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 19:37:11] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 19:37:16] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 19:37:21] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 19:37:26] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 19:37:31] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 19:37:36] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 19:37:41] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-17 19:37:46] ERROR: MikroTik connection failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond (10060)
+[2026-02-18 07:51:35] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.hotspot_sales' doesn't exist
+[2026-02-18 07:51:35] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.hotspot_sales' doesn't exist
+[2026-02-18 07:51:35] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:51:35] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:51:35] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:51:45] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:51:45] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:51:46] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:51:46] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:51:46] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:51:46] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:51:46] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:51:49] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:51:49] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:51:52] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:51:52] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:52:04] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:52:04] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:52:04] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:52:04] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:52:04] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:52:04] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:52:04] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:52:21] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:52:21] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 07:52:21] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:14:52] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:14:52] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:14:52] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:15:39] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:15:39] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:15:39] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:19:17] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:19:17] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:19:17] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:20:23] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:20:23] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:20:23] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:20:24] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:20:24] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:20:24] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:20:24] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:24:56] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:24:56] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:24:57] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:24:57] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:24:57] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:24:57] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:24:57] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:24:59] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:24:59] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:24:59] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:25:12] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:25:12] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:25:12] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:28:11] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:28:11] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:28:11] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:31:13] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:31:13] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:31:13] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:33:30] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:33:30] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:33:30] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:33:41] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:33:41] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:33:47] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:33:47] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:33:47] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:34:35] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:34:35] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:34:35] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:34:40] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:34:40] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:34:40] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:36:54] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:36:54] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:36:54] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:40:03] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:40:03] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:40:03] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:40:37] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:40:37] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:40:37] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:43:55] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:43:55] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:43:55] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:47:33] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:47:33] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:47:33] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:49:18] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:49:18] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:49:18] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:54:02] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:54:02] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:54:02] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:54:05] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:54:05] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:54:05] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:54:28] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:54:28] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:54:28] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:54:32] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:54:32] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:54:32] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:57:58] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:57:58] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:57:58] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:58:17] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:58:17] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:58:17] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:59:30] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:59:30] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 08:59:30] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:03:53] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:03:53] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:03:53] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:05:20] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:05:20] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:05:20] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:05:22] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:05:22] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:05:22] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:06:30] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:06:30] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:06:30] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:08:51] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:08:51] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:08:51] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:09:59] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:09:59] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:09:59] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:11:08] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:11:08] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:11:08] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:14:29] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:14:29] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:14:29] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:14:44] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:14:44] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:14:44] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:14:52] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:14:52] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:14:52] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:16:15] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:16:15] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:16:15] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:16:28] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:16:28] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:16:28] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:17:33] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:17:33] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:17:33] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:28:50] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:28:50] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:28:50] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:29:07] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:29:07] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:29:07] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:29:07] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:29:25] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:29:25] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:29:25] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:32:49] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:32:49] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:32:49] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:32:49] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:34:56] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:34:56] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:34:56] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 09:34:56] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.routers' doesn't exist
+[2026-02-18 10:17:09] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.hotspot_sales' doesn't exist
+[2026-02-18 10:17:09] ERROR: Database Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'gembok_simple.hotspot_sales' doesn't exist
