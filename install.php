@@ -27,6 +27,11 @@ if (file_exists('includes/config.php') && file_exists('includes/installed.lock')
     $installed = false;
 }
 
+// Prevent re-installation via POST if already installed
+if ($installed && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    die("Application is already installed. Please remove includes/installed.lock if you want to reinstall.");
+}
+
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($currentStep === 2) {
