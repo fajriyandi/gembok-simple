@@ -10,7 +10,13 @@ require_once __DIR__ . '/mikrotik_api.php';
 function formatCurrency($amount)
 {
     $amount = is_numeric($amount) ? $amount : 0;
-    $symbol = defined('CURRENCY_SYMBOL') ? CURRENCY_SYMBOL : 'Rp';
+    $symbol = 'Rp';
+    if (defined('CURRENCY_SYMBOL')) {
+        $value = (string) CURRENCY_SYMBOL;
+        if ($value !== '' && !preg_match('/^\d+$/', $value)) {
+            $symbol = $value;
+        }
+    }
     return $symbol . ' ' . number_format((float) $amount, 0, ',', '.');
 }
 
