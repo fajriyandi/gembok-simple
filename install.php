@@ -102,10 +102,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 function installApplication() {
+    global $error;
     try {
         // Create config.php
         $configContent = createConfigFile();
-        file_put_contents('includes/config.php', $configContent);
+        if (file_put_contents('includes/config.php', $configContent) === false) {
+            throw new Exception('Gagal menulis includes/config.php. Cek permission folder includes.');
+        }
         
         // Create database tables
         createDatabaseTables();
@@ -114,7 +117,9 @@ function installApplication() {
         insertDefaultData();
         
         // Create installed.lock
-        file_put_contents('includes/installed.lock', date('Y-m-d H:i:s'));
+        if (file_put_contents('includes/installed.lock', date('Y-m-d H:i:s')) === false) {
+            throw new Exception('Gagal membuat includes/installed.lock. Cek permission folder includes.');
+        }
         
         // Clear session
         unset($_SESSION['db_config']);
@@ -157,8 +162,23 @@ define('MIKROTIK_PORT', {$mikrotik['port']});
 
 // Application Configuration
 define('APP_NAME', 'GEMBOK');
-define('APP_URL', 'http://' . \$_SERVER['HTTP_HOST'] . dirname(\$_SERVER['PHP_SELF']));
+if (php_sapi_name() !== 'cli' && isset(\$_SERVER['HTTP_HOST'])) {
+    \$protocol = (!empty(\$_SERVER['HTTPS']) && \$_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    \$scriptDir = str_replace('\\\\', '/', dirname(\$_SERVER['SCRIPT_NAME']));
+    \$scriptDir = preg_replace('#/(admin|api|portal|cron|webhooks|install_steps|includes)$#', '', \$scriptDir);
+    \$scriptDir = rtrim(\$scriptDir, '/');
+    define('APP_URL', \$protocol . '://' . \$_SERVER['HTTP_HOST'] . \$scriptDir);
+} else {
+    define('APP_URL', 'http://localhost/gembok-simple2');
+}
 define('APP_VERSION', '2.0.0');
+
+// Pagination and currency
+define('ITEMS_PER_PAGE', 20);
+define('CURRENCY', 'IDR');
+define('CURRENCY_SYMBOL', 'Rp');
+define('INVOICE_PREFIX', 'INV');
+define('INVOICE_START', 1);
 
 // Security
 define('ENCRYPTION_KEY', bin2hex(random_bytes(32)));
@@ -184,7 +204,26 @@ PHP;
 
 function createDatabaseTables() {
     require_once 'includes/db.php';
-    
+
+    $pdo = getDB();
+    $payloadType = 'JSON';
+    $version = '';
+    try {
+        $version = (string)$pdo->query("SELECT VERSION()")->fetchColumn();
+    } catch (Exception $e) {
+        $version = '';
+    }
+    if ($version !== '') {
+        $versionNumber = preg_replace('/[^0-9.].*/', '', $version);
+        if ($versionNumber !== '') {
+            if (stripos($version, 'mariadb') !== false) {
+                $payloadType = version_compare($versionNumber, '10.2.7', '>=') ? 'JSON' : 'LONGTEXT';
+            } else {
+                $payloadType = version_compare($versionNumber, '5.7.8', '>=') ? 'JSON' : 'LONGTEXT';
+            }
+        }
+    }
+
     $sql = "
     CREATE TABLE IF NOT EXISTS settings (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -321,7 +360,7 @@ function createDatabaseTables() {
     CREATE TABLE IF NOT EXISTS webhook_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
         source VARCHAR(50),
-        payload JSON,
+        payload {$payloadType},
         status_code INT,
         response TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -341,9 +380,12 @@ function createDatabaseTables() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ";
     
-    // Execute SQL
-    $pdo = getDB();
-    $pdo->exec($sql);
+    $statements = array_filter(array_map('trim', explode(';', $sql)));
+    foreach ($statements as $statement) {
+        if ($statement !== '') {
+            $pdo->exec($statement);
+        }
+    }
 }
 
 function insertDefaultData() {
@@ -353,7 +395,7 @@ function insertDefaultData() {
     
     // Insert admin user
     $admin = $_SESSION['admin_config'];
-    $stmt = $pdo->prepare("INSERT INTO admin_users (username, password, email, created_at) VALUES (?, ?, ?, NOW())");
+    $stmt = $pdo->prepare("INSERT IGNORE INTO admin_users (username, password, email, created_at) VALUES (?, ?, ?, NOW())");
     $stmt->execute([$admin['username'], $admin['password'], $admin['email']]);
     
     // Insert default packages
