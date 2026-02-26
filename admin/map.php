@@ -49,7 +49,7 @@ ob_start();
 ?>
 
 <!-- Stats -->
-<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 30px;">
+<div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px;">
     <div class="stat-card">
         <div class="stat-icon cyan">
             <i class="fas fa-satellite-dish"></i>
@@ -79,7 +79,42 @@ ob_start();
             <p>Offline</p>
         </div>
     </div>
+    
+    <?php
+    $odpCount = fetchOne("SELECT COUNT(*) as total FROM odps")['total'] ?? 0;
+    ?>
+    <div class="stat-card">
+        <div class="stat-icon purple">
+            <i class="fas fa-map-marker-alt"></i>
+        </div>
+        <div class="stat-info">
+            <h3><?php echo $odpCount; ?></h3>
+            <p>Total ODP</p>
+        </div>
+    </div>
 </div>
+
+<style>
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
+        .stat-card {
+            padding: 15px;
+        }
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+        }
+        .stat-info h3 {
+            font-size: 1.5rem;
+        }
+        .stat-info p {
+            font-size: 0.8rem;
+        }
+    }
+</style>
 
 <div class="card">
     <div class="card-header">
