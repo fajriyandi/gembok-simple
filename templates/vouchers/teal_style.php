@@ -10,7 +10,7 @@
         .voucher { background: white; border-radius: 20px; padding: 30px; width: 380px; box-shadow: 0 25px 60px rgba(0, 184, 148, 0.3); position: relative; }
         .voucher::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #00b894, #00cec9); border-radius: 20px 20px 0 0; }
         .voucher-header { text-align: center; margin-bottom: 25px; }
-        .voucher-header h1 { font-size: 22px; font-weight: bold; background: linear-gradient(135deg, #00b894 0%, #00cec9 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .voucher-header h1 { font-size: 22px; font-weight: bold; background: linear-gradient(135deg, #00b894 0%, #00cec9 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .voucher-body .field { margin-bottom: 15px; }
         .voucher-body .field .label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
         .voucher-body .field .value { font-size: 18px; font-weight: bold; color: #333; }

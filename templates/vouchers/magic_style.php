@@ -12,7 +12,7 @@
         @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .voucher-content { position: relative; z-index: 1; }
         .voucher-header { text-align: center; margin-bottom: 25px; }
-        .voucher-header h1 { font-size: 24px; font-weight: bold; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .voucher-header h1 { font-size: 22px; font-weight: bold; background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .voucher-body .field { margin-bottom: 15px; }
         .voucher-body .field .label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
         .voucher-body .field .value { font-size: 18px; font-weight: bold; color: #333; }
