@@ -3,6 +3,12 @@
  * Homepage
  */
 
+// Check for installation
+if (!file_exists(__DIR__ . '/includes/installed.lock')) {
+    header("Location: install.php");
+    exit;
+}
+
 require_once 'includes/config.php';
 ?>
 <!DOCTYPE html>
@@ -548,6 +554,9 @@ require_once 'includes/config.php';
             <div class="actions">
                 <a href="./admin/login.php" class="btn btn-primary">
                     <i class="fas fa-user-shield"></i> Dashboard Admin
+                </a>
+                <a href="./sales/login.php" class="btn btn-primary" style="background: var(--gradient-secondary);">
+                    <i class="fas fa-wallet"></i> Area Sales
                 </a>
                 <a href="./portal/login.php" class="btn btn-secondary">
                     <i class="fas fa-user"></i> Area Pelanggan

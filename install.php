@@ -171,7 +171,8 @@ if (php_sapi_name() !== 'cli' && isset(\$_SERVER['HTTP_HOST'])) {
 } else {
     define('APP_URL', 'http://localhost/gembok-simple2');
 }
-define('APP_VERSION', '2.0.0');
+define('APP_VERSION', '2.0.5');
+define('GEMBOK_UPDATE_VERSION_URL', 'https://raw.githubusercontent.com/alijaya0601/gembok-simple2/main/version.txt');
 
 // Pagination and currency
 define('ITEMS_PER_PAGE', 20);
@@ -377,6 +378,57 @@ function createDatabaseTables() {
         description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS sales_users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        phone VARCHAR(20),
+        username VARCHAR(50) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        deposit_balance DECIMAL(15,2) DEFAULT 0,
+        status ENUM('active', 'inactive') DEFAULT 'active',
+        bill_discount DECIMAL(15,2) DEFAULT 2000,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS sales_transactions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sales_user_id INT NOT NULL,
+        type VARCHAR(50) NOT NULL,
+        amount DECIMAL(15,2) NOT NULL,
+        description TEXT,
+        related_username VARCHAR(100),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (sales_user_id) REFERENCES sales_users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS sales_profile_prices (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sales_user_id INT NOT NULL,
+        profile_name VARCHAR(100) NOT NULL,
+        base_price DECIMAL(15,2) NOT NULL DEFAULT 0,
+        selling_price DECIMAL(15,2) NOT NULL DEFAULT 0,
+        voucher_length INT DEFAULT 6,
+        is_active BOOLEAN DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (sales_user_id) REFERENCES sales_users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    CREATE TABLE IF NOT EXISTS hotspot_sales (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(100),
+        profile VARCHAR(100),
+        price DECIMAL(15,2),
+        selling_price DECIMAL(15,2),
+        prefix VARCHAR(20),
+        sales_user_id INT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (sales_user_id) REFERENCES sales_users(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ";
     
