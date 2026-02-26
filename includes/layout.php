@@ -825,14 +825,9 @@ if (isset($_GET['switch_router'])) {
                 <span>Bayar</span>
             </a>
             
-            <a href="<?php echo APP_URL; ?>/admin/invoices.php" class="nav-item <?php echo basename($_SERVER['PHP_SELF']) === 'invoices.php' ? 'active' : ''; ?>">
-                <i class="fas fa-file-invoice"></i>
-                <span>Invoice</span>
-            </a>
-            
-            <a href="<?php echo APP_URL; ?>/admin/logout.php" class="nav-item">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Logout</span>
+            <a href="<?php echo APP_URL; ?>/admin/menu.php" class="nav-item <?php echo basename($_SERVER['PHP_SELF']) === 'menu.php' ? 'active' : ''; ?>">
+                <i class="fas fa-bars"></i>
+                <span>Menu</span>
             </a>
         </div>
 
