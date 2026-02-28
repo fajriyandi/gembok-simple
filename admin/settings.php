@@ -161,10 +161,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'social_facebook' => sanitize($_POST['social_facebook']),
                     'social_instagram' => sanitize($_POST['social_instagram']),
                     'social_twitter' => sanitize($_POST['social_twitter']),
-                    'social_youtube' => sanitize($_POST['social_youtube'])
+                    'social_youtube' => sanitize($_POST['social_youtube']),
+                    'theme_color' => sanitize($_POST['theme_color'])
                 ];
                 
-                // Use site_settings table for these
                 foreach ($landingSettings as $key => $value) {
                     $existing = fetchOne("SELECT id FROM site_settings WHERE setting_key = ?", [$key]);
                     if ($existing) {
@@ -387,8 +387,21 @@ ob_start();
         </div>
         
         <div class="form-group">
-            <label class="form-label">Alamat Kantor</label>
-            <textarea name="contact_address" class="form-control" rows="2"><?php echo htmlspecialchars($siteSettings['contact_address'] ?? ''); ?></textarea>
+            <label class="form-label">Alamat Lengkap</label>
+            <textarea name="contact_address" class="form-control" rows="2"><?php echo htmlspecialchars($siteSettings['contact_address'] ?? 'Jakarta, Indonesia'); ?></textarea>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Warna Tema Website</label>
+            <select name="theme_color" class="form-control">
+                <option value="neon" <?php echo ($siteSettings['theme_color'] ?? 'neon') === 'neon' ? 'selected' : ''; ?>>Neon (Cyan & Purple)</option>
+                <option value="ocean" <?php echo ($siteSettings['theme_color'] ?? '') === 'ocean' ? 'selected' : ''; ?>>Ocean (Blue & Teal)</option>
+                <option value="nature" <?php echo ($siteSettings['theme_color'] ?? '') === 'nature' ? 'selected' : ''; ?>>Nature (Green & Lime)</option>
+                <option value="sunset" <?php echo ($siteSettings['theme_color'] ?? '') === 'sunset' ? 'selected' : ''; ?>>Sunset (Orange & Red)</option>
+                <option value="royal" <?php echo ($siteSettings['theme_color'] ?? '') === 'royal' ? 'selected' : ''; ?>>Royal (Gold & Dark Purple)</option>
+                <option value="crimson" <?php echo ($siteSettings['theme_color'] ?? '') === 'crimson' ? 'selected' : ''; ?>>Crimson (Red & Pink)</option>
+            </select>
+            <small class="text-muted">Pilih skema warna untuk halaman depan (index.php)</small>
         </div>
         
         <div class="form-group">
