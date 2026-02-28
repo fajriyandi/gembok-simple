@@ -107,8 +107,8 @@ if ($method === 'GET') {
         $id = $input['id'] ?? null;
         $name = trim($input['name'] ?? '');
         $code = trim($input['code'] ?? '');
-        $lat = $input['lat'] ?? null;
-        $lng = $input['lng'] ?? null;
+        $lat = ($input['lat'] === '' || $input['lat'] === null) ? null : $input['lat'];
+        $lng = ($input['lng'] === '' || $input['lng'] === null) ? null : $input['lng'];
 
         if ($name === '') {
             echo json_encode(['success' => false, 'message' => 'Nama ODP wajib diisi']);
@@ -228,8 +228,8 @@ if ($method === 'GET') {
 
     $serial = $input['serial'] ?? '';
     $name = $input['name'] ?? '';
-    $lat = $input['lat'] ?? null;
-    $lng = $input['lng'] ?? null;
+    $lat = ($input['lat'] === '' || $input['lat'] === null) ? null : $input['lat'];
+    $lng = ($input['lng'] === '' || $input['lng'] === null) ? null : $input['lng'];
     $odpId = $input['odp_id'] ?? null;
 
     if (empty($serial)) {
