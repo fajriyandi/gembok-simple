@@ -76,6 +76,7 @@ http://your-domain.com/install.php
 5. **Integrations** - Set up WhatsApp, Payment, etc. (optional)
 
 #### 5. Complete Setup
+- Access admin panel: `http://your-domain.com
 - Access admin panel: `http://your-domain.com/admin/login`
 - Access customer portal: `http://your-domain.com/portal/login`
 - Access sales portal: `http://your-domain.com/sales/login`
