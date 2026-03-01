@@ -245,6 +245,18 @@ function createDatabaseTables() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     
+    CREATE TABLE IF NOT EXISTS technician_users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        phone VARCHAR(20),
+        status ENUM('active', 'inactive') DEFAULT 'active',
+        last_login DATETIME,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
     CREATE TABLE IF NOT EXISTS packages (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
@@ -269,9 +281,13 @@ function createDatabaseTables() {
         lat DECIMAL(10,8),
         lng DECIMAL(10,8),
         portal_password VARCHAR(255),
+        installed_by INT DEFAULT NULL,
+        installation_date DATETIME DEFAULT NULL,
+        installation_photo VARCHAR(255) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (package_id) REFERENCES packages(id) ON DELETE SET NULL
+        FOREIGN KEY (package_id) REFERENCES packages(id) ON DELETE SET NULL,
+        FOREIGN KEY (installed_by) REFERENCES technician_users(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     
     CREATE TABLE IF NOT EXISTS invoices (
@@ -329,9 +345,12 @@ function createDatabaseTables() {
         priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
         notes TEXT,
         resolved_at DATETIME,
+        technician_id INT DEFAULT NULL,
+        photo_proof VARCHAR(255) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL
+        FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
+        FOREIGN KEY (technician_id) REFERENCES technician_users(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     
     CREATE TABLE IF NOT EXISTS cron_schedules (

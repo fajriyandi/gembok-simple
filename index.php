@@ -661,6 +661,7 @@ $themeColor = getSiteSetting('theme_color', 'neon');
                 <div class="dropdown-content">
                     <a href="portal/login.php"><i class="fas fa-user"></i> Pelanggan</a>
                     <a href="sales/login.php"><i class="fas fa-user-tie"></i> Sales / Agen</a>
+                    <a href="technician/login.php"><i class="fas fa-tools"></i> Teknisi</a>
                     <a href="admin/login.php"><i class="fas fa-user-shield"></i> Admin</a>
                 </div>
             </div>
