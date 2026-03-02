@@ -85,8 +85,8 @@ try {
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
         code VARCHAR(50) UNIQUE,
-        lat DECIMAL(10,8),
-        lng DECIMAL(10,8),
+        lat DECIMAL(11,8),
+        lng DECIMAL(11,8),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
@@ -99,8 +99,8 @@ try {
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100),
         serial_number VARCHAR(100) UNIQUE,
-        lat DECIMAL(10,8),
-        lng DECIMAL(10,8),
+        lat DECIMAL(11,8),
+        lng DECIMAL(11,8),
         odp_id INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
