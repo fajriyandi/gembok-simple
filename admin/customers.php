@@ -27,8 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'router_id' => (int)($_POST['router_id'] ?? 0),
                     'isolation_date' => (int)$_POST['isolation_date'],
                     'address' => sanitize($_POST['address']),
-                    'lat' => (!isset($_POST['lat']) || trim($_POST['lat']) === '') ? null : str_replace(',', '.', trim($_POST['lat'])),
-                    'lng' => (!isset($_POST['lng']) || trim($_POST['lng']) === '') ? null : str_replace(',', '.', trim($_POST['lng'])),
+                    'lat' => (!isset($_POST['lat']) || trim($_POST['lat']) === '') ? null : (string) str_replace(',', '.', trim($_POST['lat'])),
+                    'lng' => (!isset($_POST['lng']) || trim($_POST['lng']) === '') ? null : (string) str_replace(',', '.', trim($_POST['lng'])),
                     'installed_by' => !empty($_POST['installed_by']) ? (int)$_POST['installed_by'] : null,
                     'portal_password' => password_hash('1234', PASSWORD_DEFAULT),
                     'created_at' => date('Y-m-d H:i:s')
@@ -84,8 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'router_id' => (int)($_POST['router_id'] ?? 0),
                     'isolation_date' => (int)$_POST['isolation_date'],
                     'address' => sanitize($_POST['address']),
-                    'lat' => (!isset($_POST['lat']) || trim($_POST['lat']) === '') ? null : str_replace(',', '.', trim($_POST['lat'])),
-                    'lng' => (!isset($_POST['lng']) || trim($_POST['lng']) === '') ? null : str_replace(',', '.', trim($_POST['lng'])),
+                    'lat' => (!isset($_POST['lat']) || trim($_POST['lat']) === '') ? null : (string) str_replace(',', '.', trim($_POST['lat'])),
+                    'lng' => (!isset($_POST['lng']) || trim($_POST['lng']) === '') ? null : (string) str_replace(',', '.', trim($_POST['lng'])),
                     'installed_by' => !empty($_POST['installed_by']) ? (int)$_POST['installed_by'] : null,
                     'updated_at' => date('Y-m-d H:i:s')
                 ];
