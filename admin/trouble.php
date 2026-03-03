@@ -44,7 +44,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $customer = fetchOne("SELECT * FROM customers WHERE id = ?", [$customerId]);
                     if ($customer && $customer['phone']) {
                         $message = "Halo {$customer['name']},\n\nLaporan gangguan Anda telah kami terima:\n\nTicket ID: #{$ticketId}\nMasalah: " . substr($description, 0, 100) . "...\n\nTim kami akan segera menindaklanjuti. Terima kasih.";
-                        sendWhatsApp($customer['phone'], $message);
+                        // Assuming sendWhatsApp is defined in includes/functions.php or we need to require whatsapp.php
+                        if (function_exists('sendWhatsApp')) {
+                             sendWhatsApp($customer['phone'], $message);
+                        } elseif (function_exists('sendWhatsAppMessage')) {
+                             sendWhatsAppMessage($customer['phone'], $message);
+                        } else {
+                             require_once '../includes/whatsapp.php';
+                             sendWhatsAppMessage($customer['phone'], $message);
+                        }
+                    }
+                    
+                    // Notify Technician if assigned
+                    if ($technicianId) {
+                        $tech = fetchOne("SELECT phone, name FROM technician_users WHERE id = ?", [$technicianId]);
+                        if ($tech && !empty($tech['phone'])) {
+                            require_once '../includes/whatsapp.php';
+                            $msg = "🚨 *TUGAS GANGGUAN BARU*\n\n";
+                            $msg .= "Ticket: #{$ticketId}\n";
+                            $msg .= "Pelanggan: " . ($customer['name'] ?? 'N/A') . "\n";
+                            $msg .= "Alamat: " . ($customer['address'] ?? '-') . "\n";
+                            $msg .= "Masalah: {$description}\n";
+                            $msg .= "Prioritas: " . strtoupper($priority) . "\n\n";
+                            $msg .= "Mohon segera dicek. Terima kasih.";
+                            
+                            sendWhatsAppMessage($tech['phone'], $msg);
+                        }
                     }
                     
                     setFlash('success', 'Laporan gangguan berhasil ditambahkan');
@@ -93,7 +118,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         if ($status === 'resolved') {
                             $message .= "\nTerima kasih telah menggunakan layanan kami.";
                         }
-                        sendWhatsApp($customer['phone'], $message);
+                        
+                        if (function_exists('sendWhatsApp')) {
+                             sendWhatsApp($customer['phone'], $message);
+                        } elseif (function_exists('sendWhatsAppMessage')) {
+                             sendWhatsAppMessage($customer['phone'], $message);
+                        } else {
+                             require_once '../includes/whatsapp.php';
+                             sendWhatsAppMessage($customer['phone'], $message);
+                        }
                     }
                     
                     setFlash('success', 'Status tiket berhasil diperbarui');

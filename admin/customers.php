@@ -69,6 +69,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     setFlash('success', 'Pelanggan berhasil ditambahkan');
                     logActivity('ADD_CUSTOMER', "Name: {$data['name']}");
+                    
+                    // Notify Technician if assigned
+                    if (!empty($data['installed_by'])) {
+                        $tech = fetchOne("SELECT phone, name FROM technician_users WHERE id = ?", [$data['installed_by']]);
+                        if ($tech && !empty($tech['phone'])) {
+                            require_once '../includes/whatsapp.php';
+                            $msg = "🔔 *TUGAS INSTALASI BARU*\n\n";
+                            $msg .= "Pelanggan: {$data['name']}\n";
+                            $msg .= "Alamat: " . ($data['address'] ?: '-') . "\n";
+                            $msg .= "Paket: " . fetchOne("SELECT name FROM packages WHERE id = ?", [$data['package_id']])['name'] . "\n";
+                            $msg .= "Maps: https://www.google.com/maps?q={$data['lat']},{$data['lng']}\n\n";
+                            $msg .= "Mohon segera diproses. Terima kasih.";
+                            
+                            sendWhatsAppMessage($tech['phone'], $msg);
+                        }
+                    }
                 } else {
                     setFlash('error', 'Gagal menambahkan pelanggan');
                 }
