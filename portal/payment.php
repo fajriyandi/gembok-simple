@@ -157,6 +157,13 @@ ob_start();
                 <button type="submit" class="btn btn-primary" style="width: 100%;">
                     <i class="fas fa-credit-card"></i> Lanjut Pembayaran
                 </button>
+                
+                <div style="margin-top: 20px; text-align: center; font-size: 0.8rem; color: var(--text-secondary);">
+                    Dengan melanjutkan pembayaran, Anda menyetujui 
+                    <a href="#" onclick="openModal('tosModal'); return false;" style="color: var(--neon-cyan);">Syarat & Ketentuan</a> 
+                    dan 
+                    <a href="#" onclick="openModal('refundModal'); return false;" style="color: var(--neon-cyan);">Kebijakan Pengembalian Dana</a>.
+                </div>
             </form>
             
             <?php if ($paymentLink): ?>
@@ -181,6 +188,51 @@ ob_start();
             <a href="dashboard.php" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Kembali ke Dashboard
             </a>
+        </div>
+    </div>
+    
+    <!-- Contact Support -->
+    <div style="margin-top: 30px; text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+        <p>Butuh bantuan? Hubungi Layanan Pelanggan kami:</p>
+        <p>
+            <i class="fab fa-whatsapp" style="color: #25D366;"></i> 
+            <a href="https://wa.me/6281234567890" style="color: var(--text-primary); text-decoration: none;">+62 812-3456-7890</a>
+            &nbsp;|&nbsp; 
+            <i class="fas fa-envelope" style="color: var(--neon-cyan);"></i> 
+            <a href="mailto:support@gembok.net" style="color: var(--text-primary); text-decoration: none;">support@gembok.net</a>
+        </p>
+    </div>
+</div>
+
+<!-- TOS Modal -->
+<div id="tosModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: var(--bg-card); width: 600px; max-width: 90%; max-height: 80vh; overflow-y: auto; padding: 25px; border-radius: 12px; border: 1px solid var(--border-color);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <h3 style="color: var(--neon-cyan);">Syarat & Ketentuan</h3>
+            <button onclick="closeModal('tosModal')" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        <div style="color: var(--text-primary); line-height: 1.6;">
+            <p>1. Pembayaran tagihan layanan internet wajib dilakukan sebelum tanggal jatuh tempo setiap bulannya.</p>
+            <p>2. Keterlambatan pembayaran dapat mengakibatkan isolir layanan sementara secara otomatis oleh sistem.</p>
+            <p>3. Biaya administrasi pembayaran melalui payment gateway ditanggung oleh pelanggan (kecuali ada promo tertentu).</p>
+            <p>4. Simpan bukti pembayaran jika transaksi berhasil namun status belum berubah di sistem.</p>
+            <p>5. Kami menjamin keamanan data transaksi Anda melalui enkripsi standar industri.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Refund Policy Modal -->
+<div id="refundModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: var(--bg-card); width: 600px; max-width: 90%; max-height: 80vh; overflow-y: auto; padding: 25px; border-radius: 12px; border: 1px solid var(--border-color);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <h3 style="color: var(--neon-cyan);">Kebijakan Pengembalian Dana</h3>
+            <button onclick="closeModal('refundModal')" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        <div style="color: var(--text-primary); line-height: 1.6;">
+            <p>1. Pembayaran yang sudah berhasil diverifikasi sistem <strong>tidak dapat dibatalkan atau dikembalikan (non-refundable)</strong>.</p>
+            <p>2. Jika terjadi kelebihan pembayaran (double payment), dana akan dikreditkan sebagai saldo deposit untuk pembayaran tagihan bulan berikutnya.</p>
+            <p>3. Jika layanan tidak dapat digunakan karena gangguan teknis dari sisi kami lebih dari 3x24 jam, pelanggan berhak mengajukan kompensasi potongan tagihan (prorata).</p>
+            <p>4. Pengajuan komplain pembayaran harus disertai bukti transfer yang valid maksimal 7 hari setelah transaksi.</p>
         </div>
     </div>
 </div>
@@ -252,6 +304,24 @@ function selectPaymentMethod(methodCode) {
         el.style.borderColor = 'var(--border-color)';
     });
     event.currentTarget.style.borderColor = 'var(--neon-cyan)';
+}
+
+function openModal(modalId) {
+    document.getElementById(modalId).style.display = 'flex';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    if (event.target.id === 'tosModal') {
+        closeModal('tosModal');
+    }
+    if (event.target.id === 'refundModal') {
+        closeModal('refundModal');
+    }
 }
 </script>
 
