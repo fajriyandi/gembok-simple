@@ -113,11 +113,11 @@ ob_start();
 
                     <hr style="width: 100%; border-color: var(--border-color); margin: 10px 0;">
                     
-                    <h5 style="width: 100%; color: var(--text-secondary); margin: 10px 0; font-size: 0.9rem;">System</h5>
+                    <h5 style="width: 100%; color: var(--text-secondary); margin: 10px 0; font-size: 0.9rem;">Sistem</h5>
                     
                     <a href="settings.php" class="menu-grid-item">
                         <i class="fas fa-cog"></i>
-                        <span>Settings</span>
+                        <span>Pengaturan</span>
                     </a>
                     
                     <a href="update.php" class="menu-grid-item">
