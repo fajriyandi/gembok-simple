@@ -10,6 +10,12 @@ $pageTitle = 'Invoice';
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Verify CSRF token
+    if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+        setFlash('error', 'Invalid CSRF token');
+        redirect('invoices.php');
+    }
+
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'generate':
@@ -303,6 +309,7 @@ ob_start();
             <p style="margin-bottom: 10px; color: var(--text-secondary);">Generate otomatis untuk semua pelanggan aktif bulan ini:</p>
             <form method="POST" onsubmit="return confirm('Generate invoice untuk semua pelanggan aktif bulan ini?');">
                 <input type="hidden" name="action" value="generate">
+                <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-magic"></i> Generate Invoice Bulan Ini
                 </button>
@@ -384,6 +391,7 @@ ob_start();
                             <?php if ($inv['status'] === 'unpaid'): ?>
                                 <form method="POST" style="display: inline;">
                                     <input type="hidden" name="action" value="pay">
+                                    <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                                     <input type="hidden" name="invoice_id" value="<?php echo $inv['id']; ?>">
                                     <input type="hidden" name="payment_method" value="Manual">
                                     <button type="submit" class="btn btn-primary btn-sm" title="Bayar Lunas">
@@ -393,6 +401,7 @@ ob_start();
                                 
                                 <form method="POST" style="display: inline;">
                                     <input type="hidden" name="action" value="unisolate_only">
+                                    <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                                     <input type="hidden" name="invoice_id" value="<?php echo $inv['id']; ?>">
                                     <button type="submit" class="btn btn-secondary btn-sm" title="Buka Isolir" style="background: var(--neon-purple); border-color: var(--neon-purple);">
                                         <i class="fas fa-unlock"></i>
@@ -401,6 +410,7 @@ ob_start();
                                 
                                 <form method="POST" style="display: inline;" onsubmit="return confirm('Tunda jatuh tempo invoice ini ke bulan berikutnya dan buka isolir pelanggan (jika terisolir)?');">
                                     <input type="hidden" name="action" value="defer_next_month">
+                                    <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                                     <input type="hidden" name="invoice_id" value="<?php echo $inv['id']; ?>">
                                     <button type="submit" class="btn btn-secondary btn-sm" title="Tunda ke Bulan Depan" style="background: var(--neon-cyan); border-color: var(--neon-cyan);">
                                         <i class="fas fa-calendar-plus"></i>
@@ -415,6 +425,7 @@ ob_start();
                             <?php if ($inv['status'] !== 'paid'): ?>
                                 <form method="POST" style="display: inline;" onsubmit="return confirm('Hapus invoice ini?');">
                                     <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                                     <input type="hidden" name="invoice_id" value="<?php echo $inv['id']; ?>">
                                     <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
                                         <i class="fas fa-trash"></i>
@@ -446,6 +457,7 @@ ob_start();
         
         <form method="POST">
             <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
             <input type="hidden" name="invoice_id" id="edit_invoice_id">
             
             <div class="form-group">
@@ -494,6 +506,7 @@ ob_start();
         
         <form method="POST">
             <input type="hidden" name="action" value="create_manual">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
             
             <div class="form-group">
                 <label class="form-label">Pelanggan</label>

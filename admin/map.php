@@ -384,26 +384,33 @@ ob_start();
         
         <h4 style="color: var(--neon-green); margin-bottom: 10px;"><i class="fas fa-wifi"></i> WiFi Settings</h4>
         
-        <div class="form-group">
-            <label class="form-label">SSID WiFi</label>
-            <input type="text" id="wifiSsid" class="form-control" placeholder="Masukkan SSID baru">
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">Password WiFi</label>
-            <div style="display: flex; gap: 10px;">
-                <input type="password" id="wifiPassword" class="form-control" placeholder="Masukkan password baru">
-                <button type="button" class="btn btn-secondary" onclick="togglePassword()" style="padding: 10px 15px;">
-                    <i class="fas fa-eye" id="passwordToggleIcon"></i>
-                </button>
+        <div style="background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.15); border-radius: 10px; padding: 15px; margin-bottom: 15px;">
+            <div class="form-group" style="margin-bottom: 10px;">
+                <label class="form-label">SSID WiFi</label>
+                <input type="text" id="wifiSsid" class="form-control" placeholder="Masukkan SSID baru">
             </div>
+            <button type="button" class="btn btn-primary" onclick="saveSsid()" style="width: 100%;">
+                <i class="fas fa-save"></i> Simpan SSID
+            </button>
         </div>
         
-        <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
-            <button type="button" class="btn btn-secondary" onclick="closeOnuModal()">Batal</button>
-            <button type="button" class="btn btn-primary" onclick="saveWifiSettings()">
-                <i class="fas fa-save"></i> Simpan WiFi
+        <div style="background: rgba(0, 245, 255, 0.05); border: 1px solid rgba(0, 245, 255, 0.15); border-radius: 10px; padding: 15px; margin-bottom: 15px;">
+            <div class="form-group" style="margin-bottom: 10px;">
+                <label class="form-label">Password WiFi</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="password" id="wifiPassword" class="form-control" placeholder="Masukkan password baru">
+                    <button type="button" class="btn btn-secondary" onclick="togglePassword()" style="padding: 10px 15px;">
+                        <i class="fas fa-eye" id="passwordToggleIcon"></i>
+                    </button>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="saveWifiPassword()" style="width: 100%;">
+                <i class="fas fa-save"></i> Simpan Password
             </button>
+        </div>
+        
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-secondary" onclick="closeOnuModal()">Batal</button>
             <button type="button" class="btn btn-danger" onclick="rebootOnu()">
                 <i class="fas fa-redo"></i> Reboot
             </button>
@@ -693,35 +700,69 @@ function togglePassword() {
     }
 }
 
-function saveWifiSettings() {
+function saveSsid() {
     const serial = currentOnuSerial;
     const ssid = document.getElementById('wifiSsid').value;
-    const password = document.getElementById('wifiPassword').value;
     
-    if (ssid && ssid.length < 3) {
+    if (!ssid || ssid.trim() === '') {
+        alert('SSID tidak boleh kosong');
+        return;
+    }
+    
+    if (ssid.length < 3) {
         alert('SSID minimal 3 karakter');
         return;
     }
     
-    if (password && password.length < 8) {
-        alert('Password minimal 8 karakter');
-        return;
-    }
+    if (!confirm('Simpan SSID baru: "' + ssid + '"?')) return;
     
-    // Call API to update WiFi settings
     fetch('../api/onu_wifi.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ serial, ssid, password })
+        body: JSON.stringify({ serial, ssid, password: '' })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('WiFi berhasil diperbarui');
-            closeOnuModal();
+            alert('SSID berhasil diperbarui');
             loadMarkers();
         } else {
-            alert('Gagal memperbarui WiFi: ' + data.message);
+            alert('Gagal memperbarui SSID: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Terjadi kesalahan: ' + error.message);
+    });
+}
+
+function saveWifiPassword() {
+    const serial = currentOnuSerial;
+    const password = document.getElementById('wifiPassword').value;
+    
+    if (!password || password.trim() === '') {
+        alert('Password tidak boleh kosong');
+        return;
+    }
+    
+    if (password.length < 8) {
+        alert('Password minimal 8 karakter');
+        return;
+    }
+    
+    if (!confirm('Simpan password WiFi baru?')) return;
+    
+    fetch('../api/onu_wifi.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serial, ssid: '', password })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Password WiFi berhasil diperbarui');
+            loadMarkers();
+        } else {
+            alert('Gagal memperbarui password: ' + data.message);
         }
     })
     .catch(error => {

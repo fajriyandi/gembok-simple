@@ -10,6 +10,12 @@ $pageTitle = 'Paket Internet';
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Verify CSRF token
+    if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+        setFlash('error', 'Invalid CSRF token');
+        redirect('packages.php');
+    }
+
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'add':
@@ -223,6 +229,7 @@ ob_start();
     
     <form method="POST">
         <input type="hidden" name="action" value="add">
+        <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
         
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
             <div class="form-group">
@@ -344,6 +351,7 @@ ob_start();
         </div>
         <form id="editForm" method="POST">
             <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
             <input type="hidden" name="package_id" id="edit_package_id">
             
             <div class="form-group">
@@ -491,6 +499,7 @@ function deletePackage(id) {
         form.method = 'POST';
         form.innerHTML = `
             <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
             <input type="hidden" name="package_id" value="${id}">
         `;
         document.body.appendChild(form);

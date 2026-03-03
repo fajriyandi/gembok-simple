@@ -7,6 +7,12 @@ $pageTitle = 'MikroTik Hotspot';
 $mikrotikSettings = getMikrotikSettings();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Verify CSRF token
+    if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+        setFlash('error', 'Invalid CSRF token');
+        redirect('hotspot.php');
+    }
+
     $action = $_POST['action'] ?? '';
     
     switch ($action) {
@@ -226,6 +232,7 @@ ob_start();
     
     <form method="POST" style="padding: 0 20px 20px;">
         <input type="hidden" name="action" value="profile_add">
+        <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
             <div class="form-group">
                 <label class="form-label">Nama Profile</label>
@@ -280,6 +287,7 @@ ob_start();
                             </button>
                             <form method="POST" style="display: inline;" onsubmit="return confirm('Hapus profile <?php echo htmlspecialchars($profile['name'] ?? ''); ?>?')">
                                 <input type="hidden" name="action" value="profile_delete">
+                                <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                                 <input type="hidden" name="profile_id" value="<?php echo htmlspecialchars($profile['.id'] ?? ''); ?>">
                                 <button type="submit" class="btn btn-danger btn-sm" title="Delete">
                                     <i class="fas fa-trash"></i>
@@ -301,6 +309,7 @@ ob_start();
     
     <form method="POST">
         <input type="hidden" name="action" value="add">
+        <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
             <div class="form-group">
                 <label class="form-label">Username</label>
@@ -400,6 +409,7 @@ ob_start();
                             </button>
                             <form method="POST" style="display: inline;" onsubmit="return confirm('Toggle status user ini?')">
                                 <input type="hidden" name="action" value="toggle">
+                                <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                                 <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($user['.id'] ?? ''); ?>">
                                 <input type="hidden" name="current_status" value="<?php echo $user['disabled'] ?? 'false'; ?>">
                                 <button type="submit" class="btn btn-sm <?php echo ($user['disabled'] ?? 'false') === 'true' ? 'btn-primary' : 'btn-warning'; ?>" title="<?php echo ($user['disabled'] ?? 'false') === 'true' ? 'Enable' : 'Disable'; ?>">
@@ -408,6 +418,7 @@ ob_start();
                             </form>
                             <form method="POST" style="display: inline;" onsubmit="return confirm('Hapus user <?php echo htmlspecialchars($name); ?>?')">
                                 <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                                 <input type="hidden" name="username" value="<?php echo htmlspecialchars($name); ?>">
                                 <button type="submit" class="btn btn-danger btn-sm" title="Delete">
                                     <i class="fas fa-trash"></i>
@@ -432,6 +443,7 @@ ob_start();
         </div>
         <form method="POST">
             <input type="hidden" name="action" value="profile_edit">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
             <input type="hidden" name="profile_id" id="edit_profile_id">
             
             <div class="form-group">
@@ -467,6 +479,7 @@ ob_start();
         </div>
         <form method="POST">
             <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
             <input type="hidden" name="user_id" id="edit_user_id">
             
             <div class="form-group">
