@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($action === 'check') {
         // Fallback URL if not defined in config
-        $defaultUpdateUrl = 'https://raw.githubusercontent.com/alijaya0601/gembok-simple2/main/version.txt';
+        $defaultUpdateUrl = 'https://raw.githubusercontent.com/alijayanet/gembok-simple/main/version.txt';
         $remoteUrl = defined('GEMBOK_UPDATE_VERSION_URL') ? GEMBOK_UPDATE_VERSION_URL : $defaultUpdateUrl;
         
         if ($remoteUrl === '') {
