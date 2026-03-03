@@ -411,6 +411,41 @@ ob_start();
     </div>
 </div>
 
+<!-- Edit ODP Modal -->
+<div id="odpEditModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 400px; max-width: 90%; margin: 2rem;">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-edit"></i> Edit ODP</h3>
+            <button onclick="closeOdpEditModal()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.25rem;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="editOdpForm">
+            <input type="hidden" id="editOdpId">
+            <div class="form-group">
+                <label class="form-label">Nama ODP</label>
+                <input type="text" id="editOdpName" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Kode ODP</label>
+                <input type="text" id="editOdpCode" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Latitude</label>
+                <input type="number" id="editOdpLat" class="form-control" step="0.00000001">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Longitude</label>
+                <input type="number" id="editOdpLng" class="form-control" step="0.00000001">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeOdpEditModal()">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 <style>
@@ -511,7 +546,16 @@ function loadMarkers() {
                         html: '<div style="background: #00f5ff; width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #0a0a12; font-size: 12px; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><i class="fas fa-network-wired"></i></div>'
                     })
                 });
-                marker.bindPopup('<strong>' + (odp.name || 'ODP') + '</strong><br>' + (odp.code || ''));
+                marker.bindPopup(`
+                    <div style="min-width: 150px;">
+                        <strong>${odp.name || 'ODP'}</strong><br>
+                        ${odp.code || ''}<br>
+                        <hr style="margin: 5px 0; border-color: #ddd;">
+                        <button class="btn btn-sm btn-secondary" onclick="editOdp(${odp.id})" style="width: 100%; margin-top: 5px;">
+                            <i class="fas fa-edit"></i> Edit ODP
+                        </button>
+                    </div>
+                `);
                 odpMarkers.push(marker);
                 marker.addTo(map);
             });
@@ -839,6 +883,54 @@ function renderOdpLists() {
         }).join('');
     }
 }
+
+function editOdp(id) {
+    const odp = odpsCache.find(o => o.id == id);
+    if (!odp) return;
+    
+    document.getElementById('editOdpId').value = odp.id;
+    document.getElementById('editOdpName').value = odp.name;
+    document.getElementById('editOdpCode').value = odp.code || '';
+    document.getElementById('editOdpLat').value = odp.lat;
+    document.getElementById('editOdpLng').value = odp.lng;
+    
+    document.getElementById('odpEditModal').style.display = 'flex';
+}
+
+function closeOdpEditModal() {
+    document.getElementById('odpEditModal').style.display = 'none';
+}
+
+document.getElementById('editOdpForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const id = document.getElementById('editOdpId').value;
+    const name = document.getElementById('editOdpName').value.trim();
+    const code = document.getElementById('editOdpCode').value.trim();
+    const lat = document.getElementById('editOdpLat').value;
+    const lng = document.getElementById('editOdpLng').value;
+    
+    fetch('../api/onu_locations.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            type: 'odp_update',
+            id,
+            name,
+            code,
+            lat: lat ? parseFloat(lat.replace(',', '.')) : null,
+            lng: lng ? parseFloat(lng.replace(',', '.')) : null
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            closeOdpEditModal();
+            loadMarkers();
+        } else {
+            alert(result.message || 'Gagal mengupdate ODP');
+        }
+    });
+});
 
 document.getElementById('addOdpForm').addEventListener('submit', function(e) {
     e.preventDefault();
