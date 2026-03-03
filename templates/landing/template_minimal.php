@@ -195,7 +195,16 @@
                 <div class="package-price"><?php echo formatCurrency($pkg['price']); ?></div>
                 <p style="color: var(--gray); font-size: 0.9rem;"><?php echo htmlspecialchars($pkg['description'] ?? ''); ?></p>
                 <br>
-                <a href="portal/login.php" class="btn btn-primary" style="width: 100%;">Pilih Paket</a>
+                <?php
+                // Clean phone number and ensure proper format
+                $waPhone = preg_replace('/[^0-9]/', '', $contactPhone);
+                // If starts with 0, replace with 62
+                if (substr($waPhone, 0, 1) === '0') {
+                    $waPhone = '62' . substr($waPhone, 1);
+                }
+                $waMessage = urlencode("Halo, saya tertarik dengan paket " . htmlspecialchars($pkg['name']) . " - " . formatCurrency($pkg['price']));
+                ?>
+                <a href="https://wa.me/<?php echo $waPhone; ?>?text=<?php echo $waMessage; ?>" target="_blank" class="btn btn-primary" style="width: 100%;">Pilih Paket</a>
             </div>
             <?php endforeach; ?>
         </div>
