@@ -6,98 +6,105 @@
  * Usage: * * * * * /usr/bin/php /path/to/gembok-simple/cron/scheduler.php
  */
 
-// Prevent direct access
-if (php_sapi_name() !== 'cli') {
-    die("This script can only be run from CLI");
-}
-
 // Load dependencies
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-echo "[" . date('Y-m-d H:i:s') . "] Cron Scheduler started\n";
+// CLI Check - Only run if called directly from CLI
+if (php_sapi_name() === 'cli' && realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
+    runScheduler();
+} else if (php_sapi_name() !== 'cli' && realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
+    die("This script can only be run from CLI or authorized web runner");
+}
 
-try {
-    $pdo = getDB();
+/**
+ * Main function to run the scheduler
+ */
+function runScheduler() {
+    echo "[" . date('Y-m-d H:i:s') . "] Cron Scheduler started\n";
 
-    // Get all active schedules
-    $schedules = fetchAll("
-        SELECT * FROM cron_schedules 
-        WHERE is_active = 1 
-        AND (next_run IS NULL OR next_run <= NOW())
-        ORDER BY next_run ASC
-    ");
+    try {
+        $pdo = getDB();
 
-    if (empty($schedules)) {
-        echo "No active schedules to run.\n";
-        exit;
-    }
+        // Get all active schedules
+        $schedules = fetchAll("
+            SELECT * FROM cron_schedules 
+            WHERE is_active = 1 
+            AND (next_run IS NULL OR next_run <= NOW())
+            ORDER BY next_run ASC
+        ");
 
-    echo "Found " . count($schedules) . " schedule(s) to run.\n";
-
-    foreach ($schedules as $schedule) {
-        echo "\n--- Running schedule: {$schedule['name']} ---\n";
-
-        $startTime = microtime(true);
-        $status = 'started';
-
-        try {
-            switch ($schedule['task_type']) {
-                case 'auto_isolir':
-                    runAutoIsolir($pdo);
-                    break;
-
-                case 'auto_invoice':
-                    runAutoInvoice($pdo);
-                    break;
-
-                case 'backup_db':
-                    runBackupDb();
-                    break;
-
-                case 'send_reminders':
-                    sendReminders($pdo);
-                    break;
-
-                case 'custom_script':
-                    runCustomScript($pdo, $schedule);
-                    break;
-
-                default:
-                    echo "Unknown task type: {$schedule['task_type']}\n";
-                    $status = 'failed';
-            }
-
-            $status = 'success';
-
-        } catch (Exception $e) {
-            echo "Error: " . $e->getMessage() . "\n";
-            $status = 'failed';
+        if (empty($schedules)) {
+            echo "No active schedules to run.\n";
+            return;
         }
 
-        $executionTime = round(microtime(true) - $startTime, 2);
+        echo "Found " . count($schedules) . " schedule(s) to run.\n";
 
-        // Update schedule
-        update('cron_schedules', [
-            'last_run' => date('Y-m-d H:i:s'),
-            'last_status' => $status,
-            'next_run' => calculateNextRun($schedule)
-        ], 'id = ?', [$schedule['id']]);
+        foreach ($schedules as $schedule) {
+            echo "\n--- Running schedule: {$schedule['name']} ---\n";
 
-        // Log execution
-        $pdo->prepare("INSERT INTO cron_logs (schedule_id, status, execution_time, created_at) VALUES (?, ?, ?, NOW())")
-            ->execute([$schedule['id'], $status, $executionTime]);
+            $startTime = microtime(true);
+            $status = 'started';
 
-        echo "Status: {$status}\n";
-        echo "Execution time: {$executionTime}s\n";
+            try {
+                switch ($schedule['task_type']) {
+                    case 'auto_isolir':
+                        runAutoIsolir($pdo);
+                        break;
+
+                    case 'auto_invoice':
+                        runAutoInvoice($pdo);
+                        break;
+
+                    case 'backup_db':
+                        runBackupDb();
+                        break;
+
+                    case 'send_reminders':
+                        sendReminders($pdo);
+                        break;
+
+                    case 'custom_script':
+                        runCustomScript($pdo, $schedule);
+                        break;
+
+                    default:
+                        echo "Unknown task type: {$schedule['task_type']}\n";
+                        $status = 'failed';
+                }
+
+                $status = 'success';
+
+            } catch (Exception $e) {
+                echo "Error: " . $e->getMessage() . "\n";
+                $status = 'failed';
+            }
+
+            $executionTime = round(microtime(true) - $startTime, 2);
+
+            // Update schedule
+            update('cron_schedules', [
+                'last_run' => date('Y-m-d H:i:s'),
+                'last_status' => $status,
+                'next_run' => calculateNextRun($schedule)
+            ], 'id = ?', [$schedule['id']]);
+
+            // Log execution
+            $pdo->prepare("INSERT INTO cron_logs (schedule_id, status, execution_time, created_at) VALUES (?, ?, ?, NOW())")
+                ->execute([$schedule['id'], $status, $executionTime]);
+
+            echo "Status: {$status}\n";
+            echo "Execution time: {$executionTime}s\n";
+        }
+
+        echo "\n[" . date('Y-m-d H:i:s') . "] Cron Scheduler completed\n";
+
+    } catch (Exception $e) {
+        echo "Error: " . $e->getMessage() . "\n";
+        return;
     }
-
-    echo "\n[" . date('Y-m-d H:i:s') . "] Cron Scheduler completed\n";
-
-} catch (Exception $e) {
-    echo "Error: " . $e->getMessage() . "\n";
-    exit(1);
 }
 
 /**
