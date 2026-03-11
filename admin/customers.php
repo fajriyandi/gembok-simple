@@ -19,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'add':
+                $pppoePassword = isset($_POST['pppoe_password']) ? trim((string) $_POST['pppoe_password']) : '';
                 $data = [
                     'name' => sanitize($_POST['name']),
                     'phone' => sanitize($_POST['phone']),
@@ -60,7 +61,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             // Synchronize PPPoE Username to GenieACS if applicable
                             if (!empty($serial)) {
                                 genieacsSetParameter($serial, 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username', $serial);
-                                genieacsSetParameter($serial, 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Password', '1234'); // Default password assumption or pull from DB
+                                if ($pppoePassword !== '') {
+                                    genieacsSetParameter($serial, 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Password', $pppoePassword);
+                                }
                             }
                         } catch (Exception $e) {
                             // Do not block customer creation if ONU sync fails
@@ -343,6 +346,12 @@ ob_start();
                     <button type="button" class="btn btn-secondary" onclick="openPppoeUserModal()" style="flex: 0 0 auto; white-space: nowrap;">Pilih dari MikroTik</button>
                 </div>
                 <small style="color: var(--text-muted);">Pilih username PPPoE dari user MikroTik untuk menghindari salah input</small>
+            </div>
+
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">Password PPPoE (Opsional)</label>
+                <input type="text" name="pppoe_password" class="form-control" placeholder="Kosongkan jika tidak ingin mengubah password PPPoE">
+                <small style="color: var(--text-muted);">Jika diisi, password ini akan dikirim ke perangkat (GenieACS). Aplikasi tidak bisa membaca password dari MikroTik.</small>
             </div>
             
             <div class="form-group">
