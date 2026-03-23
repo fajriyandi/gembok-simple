@@ -507,6 +507,31 @@ function createDatabaseTables() {
         FOREIGN KEY (sales_user_id) REFERENCES sales_users(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+    CREATE TABLE IF NOT EXISTS hotspot_voucher_orders (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        order_number VARCHAR(50) UNIQUE NOT NULL,
+        customer_name VARCHAR(100) NOT NULL,
+        customer_phone VARCHAR(20) NOT NULL,
+        profile_name VARCHAR(100) NOT NULL,
+        amount DECIMAL(15,2) NOT NULL,
+        payment_gateway VARCHAR(20) NOT NULL DEFAULT 'tripay',
+        payment_method VARCHAR(100) DEFAULT NULL,
+        payment_link TEXT,
+        payment_reference VARCHAR(100) DEFAULT NULL,
+        payment_payload LONGTEXT,
+        status ENUM('pending','paid','failed','expired') DEFAULT 'pending',
+        paid_at DATETIME DEFAULT NULL,
+        voucher_username VARCHAR(100) DEFAULT NULL,
+        voucher_password VARCHAR(100) DEFAULT NULL,
+        voucher_generated_at DATETIME DEFAULT NULL,
+        fulfillment_status ENUM('pending','success','failed') DEFAULT 'pending',
+        fulfillment_error TEXT,
+        whatsapp_status ENUM('pending','sent','failed') DEFAULT 'pending',
+        whatsapp_sent_at DATETIME DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
     CREATE TABLE IF NOT EXISTS site_settings (
         id INT AUTO_INCREMENT PRIMARY KEY,
         setting_key VARCHAR(50) UNIQUE NOT NULL,
@@ -540,7 +565,9 @@ function insertDefaultData() {
         ['CURRENCY_SYMBOL', 'Rp'],
         ['timezone', 'Asia/Jakarta'],
         ['invoice_prefix', 'INV'],
-        ['invoice_start', '1']
+        ['invoice_start', '1'],
+        ['PUBLIC_VOUCHER_PREFIX', 'VCH-'],
+        ['PUBLIC_VOUCHER_LENGTH', '6']
     ];
     
     foreach ($settings as $setting) {

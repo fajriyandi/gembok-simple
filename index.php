@@ -70,11 +70,21 @@ $templateFiles = [
 // Validate template selection
 $templateFile = isset($templateFiles[$landingTemplate]) ? $templateFiles[$landingTemplate] : $templateFiles['neon'];
 
-// Include the selected template
+$voucherOrderUrl = rtrim(APP_URL, '/') . '/voucher';
+
+ob_start();
 if (file_exists(__DIR__ . '/' . $templateFile)) {
     include __DIR__ . '/' . $templateFile;
 } else {
-    // Fallback to neon template if file doesn't exist
     include __DIR__ . '/templates/landing/template_neon.php';
 }
+$html = ob_get_clean();
+
+$voucherButton = '<a href="' . htmlspecialchars($voucherOrderUrl, ENT_QUOTES, 'UTF-8') . '" style="position:fixed;right:16px;bottom:16px;z-index:9999;background:#22d3ee;color:#0f172a;padding:10px 14px;border-radius:999px;font-weight:700;text-decoration:none;box-shadow:0 8px 20px rgba(0,0,0,.25);font-family:Arial,sans-serif;font-size:13px;">Order Voucher</a>';
+if (stripos($html, '</body>') !== false) {
+    $html = preg_replace('/<\/body>/i', $voucherButton . '</body>', $html, 1);
+} else {
+    $html .= $voucherButton;
+}
+echo $html;
 ?>
