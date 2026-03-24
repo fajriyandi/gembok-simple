@@ -16,14 +16,15 @@ try {
     logActivity('TRIPAY_WEBHOOK', "Received webhook");
     
     // Validate signature
-    if (empty(TRIPAY_PRIVATE_KEY)) {
+    $privateKey = trim((string) getSetting('TRIPAY_PRIVATE_KEY', ''));
+    if ($privateKey === '') {
         logError('Tripay webhook: Private key not configured');
         echo json_encode(['success' => false, 'message' => 'Private key not configured']);
         exit;
     }
     
     // Generate expected signature
-    $expectedSignature = hash_hmac('sha256', $json, TRIPAY_PRIVATE_KEY);
+    $expectedSignature = hash_hmac('sha256', $json, $privateKey);
     
     if (!hash_equals($expectedSignature, $callbackSignature)) {
         logError('Tripay webhook: Invalid signature');

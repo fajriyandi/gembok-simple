@@ -36,14 +36,14 @@ $paymentMethods = [];
 if ($defaultGateway === 'tripay') {
     $paymentMethods = [
         ['code' => 'QRIS', 'name' => 'QRIS', 'icon' => 'fa-qrcode', 'color' => '#00f5ff'],
-        ['code' => 'VIRTUAL_ACCOUNT_BCA', 'name' => 'BCA Virtual Account', 'icon' => 'fa-building', 'color' => '#667eea'],
-        ['code' => 'VIRTUAL_ACCOUNT_BRI', 'name' => 'BRI Virtual Account', 'icon' => 'fa-building', 'color' => '#667eea'],
-        ['code' => 'VIRTUAL_ACCOUNT_MANDIRI', 'name' => 'Mandiri Virtual Account', 'icon' => 'fa-building', 'color' => '#667eea'],
-        ['code' => 'VIRTUAL_ACCOUNT_BNI', 'name' => 'BNI Virtual Account', 'icon' => 'fa-building', 'color' => '#667eea'],
-        ['code' => 'EWALLET_OVO', 'name' => 'OVO', 'icon' => 'fa-wallet', 'color' => '#bf00ff'],
-        ['code' => 'EWALLET_DANA', 'name' => 'DANA', 'icon' => 'fa-wallet', 'color' => '#bf00ff'],
-        ['code' => 'EWALLET_LINKAJA', 'name' => 'LinkAja', 'icon' => 'fa-wallet', 'color' => '#bf00ff'],
-        ['code' => 'EWALLET_SHOPEEPAY', 'name' => 'ShopeePay', 'icon' => 'fa-wallet', 'color' => '#bf00ff'],
+        ['code' => 'BCAVA', 'name' => 'BCA Virtual Account', 'icon' => 'fa-building', 'color' => '#667eea'],
+        ['code' => 'BRIVA', 'name' => 'BRI Virtual Account', 'icon' => 'fa-building', 'color' => '#667eea'],
+        ['code' => 'MANDIRIVA', 'name' => 'Mandiri Virtual Account', 'icon' => 'fa-building', 'color' => '#667eea'],
+        ['code' => 'BNIVA', 'name' => 'BNI Virtual Account', 'icon' => 'fa-building', 'color' => '#667eea'],
+        ['code' => 'OVO', 'name' => 'OVO', 'icon' => 'fa-wallet', 'color' => '#bf00ff'],
+        ['code' => 'DANA', 'name' => 'DANA', 'icon' => 'fa-wallet', 'color' => '#bf00ff'],
+        ['code' => 'LINKAJA', 'name' => 'LinkAja', 'icon' => 'fa-wallet', 'color' => '#bf00ff'],
+        ['code' => 'SHOPEEPAY', 'name' => 'ShopeePay', 'icon' => 'fa-wallet', 'color' => '#bf00ff'],
         ['code' => 'ALFAMART', 'name' => 'Alfamart', 'icon' => 'fa-store', 'color' => '#00ff00'],
         ['code' => 'INDOMARET', 'name' => 'Indomaret', 'icon' => 'fa-store', 'color' => '#ff0000']
     ];

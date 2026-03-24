@@ -27,7 +27,7 @@ if ($safeOrder === '') {
         syncPublicVoucherOrderPaymentStatus($safeOrder);
     }
     $order = getPublicVoucherOrderByNumber($safeOrder);
-    if ($order && ($order['status'] ?? '') === 'paid' && ($order['fulfillment_status'] ?? '') !== 'success') {
+    if ($order && ($order['status'] ?? '') === 'paid' && (($order['fulfillment_status'] ?? '') !== 'success' || ($order['whatsapp_status'] ?? 'pending') !== 'sent')) {
         fulfillPublicVoucherOrder($safeOrder);
         $order = getPublicVoucherOrderByNumber($safeOrder);
     } elseif ($order && ($order['status'] ?? '') === 'pending') {
@@ -102,6 +102,8 @@ $statusOrderUrl = $safeOrder !== '' ? APP_URL . '/voucher/status/' . rawurlencod
                 <?php if (($order['status'] ?? '') === 'pending' && !empty($order['payment_link'])): ?>
                     <a class="btn btn-primary" href="<?php echo htmlspecialchars($order['payment_link']); ?>" target="_blank" rel="noopener noreferrer">Bayar Sekarang</a>
                     <a class="btn btn-dark" href="<?php echo htmlspecialchars($statusOrderUrl . '?check=1'); ?>">Cek Status Pembayaran</a>
+                <?php elseif (($order['status'] ?? '') === 'paid' && ($order['whatsapp_status'] ?? 'pending') !== 'sent'): ?>
+                    <a class="btn btn-dark" href="<?php echo htmlspecialchars($statusOrderUrl . '?check=1'); ?>">Kirim Ulang WhatsApp</a>
                 <?php elseif (($order['status'] ?? '') === 'failed' || ($order['status'] ?? '') === 'expired'): ?>
                     <div class="warn">Pembayaran tidak berhasil atau kedaluwarsa. Silakan buat order baru.</div>
                     <a class="btn btn-dark" href="<?php echo APP_URL; ?>/voucher">Buat Order Baru</a>

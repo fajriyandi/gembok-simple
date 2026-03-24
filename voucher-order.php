@@ -25,14 +25,14 @@ $paymentMethods = [];
 if ($defaultGateway === 'tripay') {
     $paymentMethods = [
         ['code' => 'QRIS', 'name' => 'QRIS'],
-        ['code' => 'VIRTUAL_ACCOUNT_BCA', 'name' => 'BCA Virtual Account'],
-        ['code' => 'VIRTUAL_ACCOUNT_BRI', 'name' => 'BRI Virtual Account'],
-        ['code' => 'VIRTUAL_ACCOUNT_MANDIRI', 'name' => 'Mandiri Virtual Account'],
-        ['code' => 'VIRTUAL_ACCOUNT_BNI', 'name' => 'BNI Virtual Account'],
-        ['code' => 'EWALLET_OVO', 'name' => 'OVO'],
-        ['code' => 'EWALLET_DANA', 'name' => 'DANA'],
-        ['code' => 'EWALLET_LINKAJA', 'name' => 'LinkAja'],
-        ['code' => 'EWALLET_SHOPEEPAY', 'name' => 'ShopeePay'],
+        ['code' => 'BCAVA', 'name' => 'BCA Virtual Account'],
+        ['code' => 'BRIVA', 'name' => 'BRI Virtual Account'],
+        ['code' => 'MANDIRIVA', 'name' => 'Mandiri Virtual Account'],
+        ['code' => 'BNIVA', 'name' => 'BNI Virtual Account'],
+        ['code' => 'OVO', 'name' => 'OVO'],
+        ['code' => 'DANA', 'name' => 'DANA'],
+        ['code' => 'LINKAJA', 'name' => 'LinkAja'],
+        ['code' => 'SHOPEEPAY', 'name' => 'ShopeePay'],
         ['code' => 'ALFAMART', 'name' => 'Alfamart'],
         ['code' => 'INDOMARET', 'name' => 'Indomaret']
     ];

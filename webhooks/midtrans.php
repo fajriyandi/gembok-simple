@@ -32,7 +32,7 @@ try {
     $statusCode = $data['status_code'] ?? '';
 
     // Verify signature
-    $midtransApiKey = defined('MIDTRANS_API_KEY') ? (string) MIDTRANS_API_KEY : '';
+    $midtransApiKey = trim((string) getSetting('MIDTRANS_API_KEY', ''));
     if ($midtransApiKey === '') {
         logError('Midtrans webhook: API Key not configured');
         echo json_encode(['success' => false, 'message' => 'Configuration error']);
