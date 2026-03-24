@@ -1666,7 +1666,7 @@ function fulfillPublicVoucherOrder($orderNumber)
         $seed = generateRandomString($length, $numericOnly ? 'numeric' : 'mixed');
         $username = $prefix . ($numericOnly ? $seed : strtoupper($seed));
         $password = $passwordSame ? $username : ($numericOnly ? $seed : strtoupper($seed));
-        $comment = 'public-voucher-' . $safe;
+        $comment = 'vc-public-voucher-' . $safe;
         if (mikrotikAddHotspotUser($username, $password, $profileName, ['comment' => $comment])) {
             $created = true;
             break;
