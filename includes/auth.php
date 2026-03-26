@@ -127,7 +127,7 @@ function requireCustomerLogin() {
     $mustChange = $_SESSION['customer']['must_change_password'] ?? false;
     if ($mustChange) {
         $script = basename($_SERVER['SCRIPT_NAME'] ?? '');
-        if ($script !== 'dashboard.php' && $script !== 'logout.php') {
+        if ($script !== 'dashboard.php' && $script !== 'logout.php' && $script !== 'payment.php' && $script !== 'invoices.php') {
             redirect(APP_URL . '/portal/dashboard.php');
         }
     }

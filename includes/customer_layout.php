@@ -685,9 +685,9 @@ ob_start();
                 <span>Dashboard</span>
             </a>
             
-            <a href="payment.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'payment.php' ? 'active' : ''; ?>">
-                <i class="fas fa-credit-card"></i>
-                <span>Pembayaran</span>
+            <a href="invoices.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'invoices.php' ? 'active' : ''; ?>">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Tagihan</span>
             </a>
             
             <div style="margin-top: 20px; border-top: 1px solid var(--border-color);"></div>
@@ -714,7 +714,7 @@ ob_start();
                 <i class="fas fa-ticket-alt"></i>
                 <span>Lapor</span>
             </a>
-            <a href="payment.php" class="mobile-nav-item <?php echo basename($_SERVER['PHP_SELF']) === 'payment.php' ? 'active' : ''; ?>">
+            <a href="invoices.php" class="mobile-nav-item <?php echo basename($_SERVER['PHP_SELF']) === 'invoices.php' ? 'active' : ''; ?>">
                 <i class="fas fa-credit-card"></i>
                 <span>Tagihan</span>
             </a>

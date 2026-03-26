@@ -1427,6 +1427,107 @@ function ensurePublicVoucherTables()
     }
 }
 
+function ensureInvoiceNotificationTables()
+{
+    static $checked = false;
+    if ($checked) {
+        return true;
+    }
+    $pdo = getDB();
+    $sql = "CREATE TABLE IF NOT EXISTS invoice_notifications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        invoice_number VARCHAR(50) NOT NULL,
+        event VARCHAR(30) NOT NULL,
+        whatsapp_status ENUM('pending','sent','failed') DEFAULT 'pending',
+        whatsapp_sent_at DATETIME DEFAULT NULL,
+        last_error TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_invoice_event (invoice_number, event)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+    try {
+        $pdo->exec($sql);
+        $checked = true;
+        return true;
+    } catch (Exception $e) {
+        logError('Ensure invoice_notifications failed: ' . $e->getMessage());
+        return false;
+    }
+}
+
+function sendInvoicePaidWhatsapp($invoiceNumber, $gateway = '', $paymentData = [])
+{
+    if (!ensureInvoiceNotificationTables()) {
+        return false;
+    }
+    $invoiceNumber = trim((string) $invoiceNumber);
+    if ($invoiceNumber === '') {
+        return false;
+    }
+    $existing = fetchOne("SELECT * FROM invoice_notifications WHERE invoice_number = ? AND event = ?", [$invoiceNumber, 'paid']);
+    if ($existing && ($existing['whatsapp_status'] ?? '') === 'sent') {
+        return true;
+    }
+
+    $invoice = fetchOne("SELECT i.*, c.name as customer_name, c.phone as customer_phone, p.name as package_name FROM invoices i LEFT JOIN customers c ON i.customer_id = c.id LEFT JOIN packages p ON i.package_id = p.id WHERE i.invoice_number = ?", [$invoiceNumber]);
+    if (!$invoice) {
+        return false;
+    }
+
+    $phone = trim((string) ($invoice['customer_phone'] ?? ''));
+    if ($phone === '') {
+        return false;
+    }
+
+    $method = '';
+    if (is_array($paymentData)) {
+        $method = (string) ($paymentData['payment_method'] ?? ($paymentData['payment_type'] ?? ''));
+    }
+    if ($method === '') {
+        $method = (string) ($invoice['payment_method'] ?? '');
+    }
+    if ($gateway === '') {
+        $gateway = (string) ($invoice['payment_gateway'] ?? '');
+    }
+
+    $message = "Pembayaran Diterima\n\n";
+    $message .= "Invoice: {$invoiceNumber}\n";
+    $message .= "Nama: " . ($invoice['customer_name'] ?? '-') . "\n";
+    if (!empty($invoice['package_name'])) {
+        $message .= "Paket: " . $invoice['package_name'] . "\n";
+    }
+    $message .= "Total: " . formatCurrency($invoice['amount'] ?? 0) . "\n";
+    $message .= "Metode: " . ($method !== '' ? $method : '-') . "\n";
+    $message .= "Gateway: " . ($gateway !== '' ? strtoupper((string) $gateway) : '-') . "\n";
+    $paidAt = $invoice['paid_at'] ?? '';
+    if ($paidAt) {
+        $message .= "Waktu: {$paidAt}\n";
+    }
+    $message .= "\nTerima kasih. Jika layanan sempat terisolir, sistem akan membuka otomatis.";
+
+    $sent = sendWhatsApp($phone, $message);
+
+    $data = [
+        'invoice_number' => $invoiceNumber,
+        'event' => 'paid',
+        'whatsapp_status' => $sent ? 'sent' : 'failed',
+        'whatsapp_sent_at' => $sent ? date('Y-m-d H:i:s') : null,
+        'last_error' => $sent ? null : 'sendWhatsApp failed'
+    ];
+
+    if ($existing) {
+        update('invoice_notifications', [
+            'whatsapp_status' => $data['whatsapp_status'],
+            'whatsapp_sent_at' => $data['whatsapp_sent_at'],
+            'last_error' => $data['last_error']
+        ], 'id = ?', [(int) $existing['id']]);
+    } else {
+        insert('invoice_notifications', $data);
+    }
+
+    return $sent;
+}
+
 function getPublicVoucherCatalog()
 {
     $profiles = mikrotikGetHotspotProfiles();

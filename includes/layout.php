@@ -1099,6 +1099,11 @@ if (isset($_GET['switch_router'])) {
                         style="padding-left: 45px; font-size: 0.9rem;">
                         <i class="fas fa-clock"></i> <span>Schedulers</span>
                     </a>
+                    <a href="<?php echo APP_URL; ?>/admin/hotspot-login-export.php"
+                        class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'hotspot-login-export.php' ? 'active' : ''; ?>"
+                        style="padding-left: 45px; font-size: 0.9rem;">
+                        <i class="fas fa-right-to-bracket"></i> <span>Login Template</span>
+                    </a>
                     <a href="<?php echo APP_URL; ?>/admin/export-rsc.php"
                         class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'export-rsc.php' ? 'active' : ''; ?>"
                         style="padding-left: 45px; font-size: 0.9rem;">
