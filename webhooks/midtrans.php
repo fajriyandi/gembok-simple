@@ -87,6 +87,8 @@ function handlePaidInvoice($invoiceNumber, $paymentData) {
     ], 'invoice_number = ?', [$invoiceNumber]);
     
     logActivity('INVOICE_PAID', "Invoice: {$invoiceNumber}");
+
+    sendInvoicePaidWhatsapp($invoiceNumber, 'midtrans', $paymentData);
     
     // Check if customer should be unisolated
     $customer = fetchOne("SELECT * FROM customers WHERE id = ?", [$invoice['customer_id']]);
