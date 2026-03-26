@@ -70,7 +70,8 @@ $templateFiles = [
 // Validate template selection
 $templateFile = isset($templateFiles[$landingTemplate]) ? $templateFiles[$landingTemplate] : $templateFiles['neon'];
 
-$voucherOrderUrl = rtrim(APP_URL, '/') . '/voucher';
+$usePretty = (string) getSetting('USE_PRETTY_URLS', '1') === '1';
+$voucherOrderUrl = rtrim(APP_URL, '/') . ($usePretty ? '/voucher' : '/voucher-order.php');
 
 ob_start();
 if (file_exists(__DIR__ . '/' . $templateFile)) {

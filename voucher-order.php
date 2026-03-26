@@ -84,7 +84,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'payment_method' => $oldMethod
                 ]);
                 if ($orderResult['success'] ?? false) {
-                    header('Location: ' . APP_URL . '/voucher/status/' . rawurlencode($orderResult['order_number']));
+                    $usePretty = (string) getSetting('USE_PRETTY_URLS', '1') === '1';
+                    $statusUrl = rtrim(APP_URL, '/') . ($usePretty
+                        ? ('/voucher/status/' . rawurlencode($orderResult['order_number']))
+                        : ('/voucher-status.php?order=' . rawurlencode($orderResult['order_number']))
+                    );
+                    header('Location: ' . $statusUrl);
                     exit;
                 }
                 $errorMessage = $orderResult['message'] ?? 'Gagal membuat order voucher.';

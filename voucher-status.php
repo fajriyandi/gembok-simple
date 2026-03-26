@@ -37,7 +37,10 @@ if ($safeOrder === '') {
         $message = 'Order tidak ditemukan.';
     }
 }
-$statusOrderUrl = $safeOrder !== '' ? APP_URL . '/voucher/status/' . rawurlencode($safeOrder) : APP_URL . '/voucher';
+$usePretty = (string) getSetting('USE_PRETTY_URLS', '1') === '1';
+$statusOrderUrl = $safeOrder !== ''
+    ? (rtrim(APP_URL, '/') . ($usePretty ? ('/voucher/status/' . rawurlencode($safeOrder)) : ('/voucher-status.php?order=' . rawurlencode($safeOrder))))
+    : (rtrim(APP_URL, '/') . ($usePretty ? '/voucher' : '/voucher-order.php'));
 ?>
 <!doctype html>
 <html lang="id">
