@@ -853,14 +853,31 @@ ob_start();
             
             <div style="margin-bottom: 15px;">
                 <label style="display: block; font-size: 12px; color: #00ff88; margin-bottom: 5px;">Metode 1: Script CLI (Direkomendasikan untuk VPS)</label>
+                <?php
+                $schedulerPath = realpath(__DIR__ . '/../cron/scheduler.php');
+                $schedulerPathUnix = $schedulerPath ? str_replace('\\', '/', $schedulerPath) : '/path/to/gembok-simple/cron/scheduler.php';
+                $schedulerPathWin = $schedulerPath ? $schedulerPath : 'C:\\path\\to\\gembok-simple\\cron\\scheduler.php';
+                ?>
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <input type="text" id="cron_cli_path" readonly
-                        value="* * * * * /usr/bin/php <?php echo str_replace('\\', '/', realpath(__DIR__ . '/../cron/scheduler.php')); ?>"
+                        value="* * * * * /usr/bin/php <?php echo htmlspecialchars($schedulerPathUnix); ?>"
                         style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(0,255,136,0.3); color: #fff; border-radius: 6px; padding: 8px 12px; font-size: 12px; font-family: monospace; cursor: pointer;"
                         onclick="this.select()">
                     <button type="button" onclick="copyWebhookUrl('cron_cli_path', this)" style="background: #00ff88; color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap;">
                         <i class="fas fa-copy"></i> Salin
                     </button>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+                    <input type="text" id="cron_cli_windows" readonly
+                        value="php.exe <?php echo htmlspecialchars($schedulerPathWin); ?>"
+                        style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(0,255,136,0.3); color: #fff; border-radius: 6px; padding: 8px 12px; font-size: 12px; font-family: monospace; cursor: pointer;"
+                        onclick="this.select()">
+                    <button type="button" onclick="copyWebhookUrl('cron_cli_windows', this)" style="background: #00ff88; color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap;">
+                        <i class="fas fa-copy"></i> Salin
+                    </button>
+                </div>
+                <div style="color: var(--text-muted); font-size: 12px; margin-top: 6px;">
+                    Linux/VPS: pakai format cron. Windows Task Scheduler: isi path <strong>php.exe</strong> sesuai instalasi PHP Anda.
                 </div>
             </div>
 
@@ -882,6 +899,9 @@ ob_start();
                     <button type="button" onclick="copyWebhookUrl('cron_web_url', this)" style="background: #00ff88; color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap;">
                         <i class="fas fa-copy"></i> Salin
                     </button>
+                </div>
+                <div style="color: var(--text-muted); font-size: 12px; margin-top: 6px;">
+                    Pastikan <strong>APP_URL</strong> sudah menggunakan domain/IP server (bukan <strong>localhost</strong>) jika dipanggil dari hosting/panel.
                 </div>
                 <input type="hidden" name="cron_token" value="<?php echo $cronToken; ?>">
             </div>
