@@ -368,11 +368,15 @@ function isCustomerIsolated($customerId)
 }
 
 // Isolate customer
-function isolateCustomer($customerId)
+function isolateCustomer($customerId, $options = [])
 {
     $customer = fetchOne("SELECT * FROM customers WHERE id = ?", [$customerId]);
     if (!$customer) {
         return false;
+    }
+
+    if (($customer['status'] ?? '') === 'isolated') {
+        return true;
     }
 
     // Update status
@@ -380,13 +384,22 @@ function isolateCustomer($customerId)
 
     // Update MikroTik profile
     $package = fetchOne("SELECT * FROM packages WHERE id = ?", [$customer['package_id']]);
-    if ($package && !empty($customer['pppoe_username'])) {
+    $sendWhatsapp = true;
+    if (is_array($options) && array_key_exists('send_whatsapp', $options)) {
+        $sendWhatsapp = (bool) $options['send_whatsapp'];
+    }
+
+    if ($package && !empty($customer['pppoe_username']) && !empty($package['profile_isolir'])) {
         // Call MikroTik API to change profile on assigned router
         mikrotikSetProfile($customer['pppoe_username'], $package['profile_isolir'], $customer['router_id']);
 
         // Send WhatsApp notification
-        $message = "Halo {$customer['name']},\n\nPembayaran internet Anda sudah melewati tanggal jatuh tempo.\n\nMohon segera lakukan pembayaran untuk mengaktifkan kembali koneksi internet Anda.\n\nTerima kasih.";
-        sendWhatsApp($customer['phone'], $message);
+        if ($sendWhatsapp) {
+            $message = "Halo {$customer['name']},\n\nPembayaran internet Anda sudah melewati tanggal jatuh tempo.\n\nMohon segera lakukan pembayaran untuk mengaktifkan kembali koneksi internet Anda.\n\nTerima kasih.";
+            sendWhatsApp($customer['phone'], $message);
+        }
+    } elseif ($package && !empty($customer['pppoe_username']) && empty($package['profile_isolir'])) {
+        logError('Isolir skipped MikroTik profile update (profile_isolir kosong). Customer ID: ' . $customerId);
     }
 
     logActivity('ISOLATE_CUSTOMER', "Customer ID: {$customerId}");
