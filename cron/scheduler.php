@@ -157,12 +157,19 @@ function runAutoIsolir($pdo)
 
     // Get customers with unpaid invoices that are overdue
     $overdueInvoices = fetchAll("
-        SELECT c.id, c.name, c.phone, c.pppoe_username, c.package_id, i.invoice_number, i.amount
+        SELECT c.id, c.name, c.phone, c.pppoe_username, c.package_id, i.invoice_number, i.amount, i.due_date
         FROM customers c
         INNER JOIN invoices i ON c.id = i.customer_id
         WHERE i.status = 'unpaid'
         AND i.due_date < CURDATE()
         AND c.status = 'active'
+        AND i.due_date = (
+            SELECT MIN(i2.due_date)
+            FROM invoices i2
+            WHERE i2.customer_id = c.id
+            AND i2.status = 'unpaid'
+            AND i2.due_date < CURDATE()
+        )
     ");
 
     echo "Found " . count($overdueInvoices) . " overdue invoices\n";
@@ -170,8 +177,8 @@ function runAutoIsolir($pdo)
     foreach ($overdueInvoices as $invoice) {
         echo "Isolating customer: {$invoice['name']} (Invoice: {$invoice['invoice_number']})\n";
 
-        // Isolate customer
-        if (isolateCustomer($invoice['id'])) {
+        // Isolate customer (hindari double WA dari isolateCustomer)
+        if (isolateCustomer($invoice['id'], ['send_whatsapp' => false])) {
             echo "  ✓ Customer isolated\n";
 
             // Send WhatsApp notification
@@ -277,6 +284,13 @@ function sendReminders($pdo)
         WHERE i.status = 'unpaid'
         AND i.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 3 DAY)
         AND c.status = 'active'
+        AND i.due_date = (
+            SELECT MIN(i2.due_date)
+            FROM invoices i2
+            WHERE i2.customer_id = c.id
+            AND i2.status = 'unpaid'
+            AND i2.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 3 DAY)
+        )
     ");
 
     echo "Found " . count($upcomingInvoices) . " upcoming invoice reminders\n";
