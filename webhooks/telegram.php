@@ -108,11 +108,19 @@ try {
                 break;
 
             case 'mt_hotspot_add_menu':
-                handleHotspotAddMenu($chatId);
+                handleHotspotAddMenu($chatId, $callbackData);
                 break;
 
             case 'mt_hotspot_add_pick':
                 handleHotspotAddPickCallback($chatId, $callbackData, $callbackQuery);
+                break;
+            
+            case 'mt_voucher_menu':
+                handleHotspotVoucherMenu($chatId, $callbackData);
+                break;
+            
+            case 'mt_voucher_gen':
+                handleHotspotVoucherGenerateCallback($chatId, $callbackData, $callbackQuery);
                 break;
             
             case 'mikrotik_menu':
@@ -891,7 +899,8 @@ function handleMikrotikMenu($chatId) {
             [['text' => '📊 Resource', 'callback_data' => 'action=mt_resource'], ['text' => '📡 Online PPPoE', 'callback_data' => 'action=mt_online']],
             [['text' => '📶 Ping IP/Host', 'callback_data' => 'action=mt_ping_help']],
             [['text' => '👤 PPPoE Commands', 'callback_data' => 'action=mt_pppoe_help'], ['text' => '🌐 Hotspot Commands', 'callback_data' => 'action=mt_hotspot_help']],
-            [['text' => '➕ Add Hotspot User', 'callback_data' => 'action=mt_hotspot_add_menu']]
+            [['text' => '➕ Add Hotspot User', 'callback_data' => 'action=mt_hotspot_add_menu']],
+            [['text' => '🎫 Generate Voucher', 'callback_data' => 'action=mt_voucher_menu']]
         ]
     ];
     sendMessage($chatId, "Menu MikroTik Admin:", ['reply_markup' => $keyboard]);
@@ -987,11 +996,11 @@ function handleMikrotikPppoeHelp($chatId) {
 }
 
 function handleMikrotikHotspotHelp($chatId) {
-    $msg = "🌐 *Hotspot Commands*\n/hs_list\n/hs_addmenu\n/hs_add &lt;u&gt; &lt;p&gt; &lt;prof&gt;\n/hs_del &lt;u&gt;";
+    $msg = "🌐 *Hotspot Commands*\n/hs_list\n/hs_addmenu\n/hs_add &lt;u&gt; &lt;p&gt; &lt;prof&gt;\n/hs_del &lt;u&gt;\n\n🎫 Voucher:\nBuka Menu MikroTik → Generate Voucher";
     sendMessage($chatId, $msg);
 }
 
-function handleHotspotAddMenu($chatId) {
+function handleHotspotAddMenu($chatId, $data = []) {
     if (!isAdminChat($chatId)) return;
 
     $catalog = getPublicVoucherCatalog();
@@ -1000,12 +1009,25 @@ function handleHotspotAddMenu($chatId) {
         return;
     }
 
+    usort($catalog, function ($a, $b) {
+        return ((int) ($a['price'] ?? 0)) <=> ((int) ($b['price'] ?? 0));
+    });
+
+    $page = (int) ($data['page'] ?? 1);
+    if ($page < 1) $page = 1;
+    $perPage = 12;
+    $total = count($catalog);
+    $totalPages = (int) ceil($total / $perPage);
+    if ($totalPages < 1) $totalPages = 1;
+    if ($page > $totalPages) $page = $totalPages;
+    $offset = ($page - 1) * $perPage;
+    $items = array_slice($catalog, $offset, $perPage);
+
     $message = "➕ *Tambah User Hotspot*\n\nPilih profile (yang ada harganya saja):";
     $keyboard = ['inline_keyboard' => []];
 
     $row = [];
-    $count = 0;
-    foreach ($catalog as $item) {
+    foreach ($items as $item) {
         $profileName = (string) ($item['profile_name'] ?? '');
         if ($profileName === '') {
             continue;
@@ -1016,18 +1038,26 @@ function handleHotspotAddMenu($chatId) {
             $label .= ' - ' . formatCurrency($price);
         }
         $row[] = ['text' => $label, 'callback_data' => 'action=mt_hotspot_add_pick&profile=' . urlencode($profileName)];
-        if (count($row) === 1) {
+        if (count($row) === 2) {
             $keyboard['inline_keyboard'][] = $row;
             $row = [];
-        }
-        $count++;
-        if ($count >= 15) {
-            break;
         }
     }
     if (!empty($row)) {
         $keyboard['inline_keyboard'][] = $row;
     }
+
+    $nav = [];
+    if ($page > 1) {
+        $nav[] = ['text' => '⬅️ Prev', 'callback_data' => 'action=mt_hotspot_add_menu&page=' . ($page - 1)];
+    }
+    if ($page < $totalPages) {
+        $nav[] = ['text' => 'Next ➡️', 'callback_data' => 'action=mt_hotspot_add_menu&page=' . ($page + 1)];
+    }
+    if (!empty($nav)) {
+        $keyboard['inline_keyboard'][] = $nav;
+    }
+
     $keyboard['inline_keyboard'][] = [['text' => 'Batal', 'callback_data' => 'action=mikrotik_menu']];
 
     sendMessage($chatId, $message, ['reply_markup' => $keyboard]);
@@ -1050,6 +1080,144 @@ function handleHotspotAddPickCallback($chatId, $data, $callbackQuery) {
     $msg .= "Kirim perintah ini (ganti USER/PASS):\n";
     $msg .= "<code>/hs_add USER PASS {$profileEscaped}</code>";
     sendMessage($chatId, $msg);
+}
+
+function handleHotspotVoucherMenu($chatId, $data = []) {
+    if (!isAdminChat($chatId)) return;
+
+    $catalog = getPublicVoucherCatalog();
+    if (empty($catalog)) {
+        sendMessage($chatId, "Tidak ada profile hotspot yang punya harga (seperti voucher publik). Pastikan Hotspot User Profile di MikroTik punya script on-login dengan price/selling_price.");
+        return;
+    }
+
+    usort($catalog, function ($a, $b) {
+        return ((int) ($a['price'] ?? 0)) <=> ((int) ($b['price'] ?? 0));
+    });
+
+    $page = (int) ($data['page'] ?? 1);
+    if ($page < 1) $page = 1;
+    $perPage = 12;
+    $total = count($catalog);
+    $totalPages = (int) ceil($total / $perPage);
+    if ($totalPages < 1) $totalPages = 1;
+    if ($page > $totalPages) $page = $totalPages;
+    $offset = ($page - 1) * $perPage;
+    $items = array_slice($catalog, $offset, $perPage);
+
+    $message = "🎫 *Generate Voucher Hotspot*\n\nKlik profile untuk generate voucher (kode hanya angka, username=password):\nHalaman {$page}/{$totalPages}";
+    $keyboard = ['inline_keyboard' => []];
+
+    $row = [];
+    foreach ($items as $item) {
+        $profileName = (string) ($item['profile_name'] ?? '');
+        if ($profileName === '') {
+            continue;
+        }
+        $price = (int) ($item['price'] ?? 0);
+        $validity = (string) ($item['validity'] ?? '-');
+        $label = $profileName;
+        if ($price > 0) {
+            $label .= ' - ' . formatCurrency($price);
+        }
+        if ($validity !== '' && $validity !== '-') {
+            $label .= ' (' . $validity . ')';
+        }
+        $row[] = ['text' => $label, 'callback_data' => 'action=mt_voucher_gen&profile=' . urlencode($profileName)];
+        if (count($row) === 2) {
+            $keyboard['inline_keyboard'][] = $row;
+            $row = [];
+        }
+    }
+    if (!empty($row)) {
+        $keyboard['inline_keyboard'][] = $row;
+    }
+
+    $nav = [];
+    if ($page > 1) {
+        $nav[] = ['text' => '⬅️ Prev', 'callback_data' => 'action=mt_voucher_menu&page=' . ($page - 1)];
+    }
+    if ($page < $totalPages) {
+        $nav[] = ['text' => 'Next ➡️', 'callback_data' => 'action=mt_voucher_menu&page=' . ($page + 1)];
+    }
+    if (!empty($nav)) {
+        $keyboard['inline_keyboard'][] = $nav;
+    }
+
+    $keyboard['inline_keyboard'][] = [['text' => 'Kembali', 'callback_data' => 'action=mikrotik_menu']];
+
+    sendMessage($chatId, $message, ['reply_markup' => $keyboard]);
+}
+
+function handleHotspotVoucherGenerateCallback($chatId, $data, $callbackQuery) {
+    if (!isAdminChat($chatId)) return;
+
+    $callbackQueryId = $callbackQuery['id'] ?? null;
+    answerCallbackQuery($callbackQueryId);
+
+    $profile = trim((string) ($data['profile'] ?? ''));
+    if ($profile === '') {
+        sendMessage($chatId, "Profile tidak valid.");
+        return;
+    }
+
+    $catalog = getPublicVoucherCatalog();
+    $selected = findPublicVoucherPackage($catalog, $profile);
+    if (!$selected) {
+        sendMessage($chatId, "Profile tidak ditemukan atau tidak punya harga.");
+        return;
+    }
+
+    $length = (int) getSetting('PUBLIC_VOUCHER_LENGTH', 6);
+    if ($length < 4) $length = 4;
+    if ($length > 12) $length = 12;
+
+    $prefix = trim((string) getSetting('PUBLIC_VOUCHER_PREFIX', ''));
+    $prefix = preg_replace('/\D+/', '', (string) $prefix);
+
+    $created = false;
+    $username = '';
+    $password = '';
+    for ($i = 0; $i < 20; $i++) {
+        $seed = generateRandomString($length, 'numeric');
+        $username = $prefix . $seed;
+        $password = $username;
+        $ts = date('YmdHis');
+        $comment = "parent:{$profile} vc-tg-voucher-{$chatId}-{$ts}";
+        if (mikrotikAddHotspotUser($username, $password, $profile, ['comment' => $comment])) {
+            $created = true;
+            break;
+        }
+    }
+
+    if (!$created) {
+        sendMessage($chatId, "Gagal generate voucher. Coba lagi.");
+        return;
+    }
+
+    $profileEscaped = htmlspecialchars($profile, ENT_QUOTES, 'UTF-8');
+    $userEscaped = htmlspecialchars($username, ENT_QUOTES, 'UTF-8');
+    $price = (int) ($selected['price'] ?? 0);
+    $validity = (string) ($selected['validity'] ?? '-');
+
+    $msg = "✅ Voucher berhasil dibuat\n\n";
+    $msg .= "Profile: <b>{$profileEscaped}</b>\n";
+    if ($price > 0) {
+        $msg .= "Harga: <b>" . htmlspecialchars(formatCurrency($price), ENT_QUOTES, 'UTF-8') . "</b>\n";
+    }
+    if ($validity !== '' && $validity !== '-') {
+        $msg .= "Masa aktif: <b>" . htmlspecialchars($validity, ENT_QUOTES, 'UTF-8') . "</b>\n";
+    }
+    $msg .= "\nUsername: <code>{$userEscaped}</code>\n";
+    $msg .= "Password: <code>{$userEscaped}</code>";
+
+    $keyboard = [
+        'inline_keyboard' => [
+            [['text' => '🎫 Generate Lagi', 'callback_data' => 'action=mt_voucher_menu']],
+            [['text' => 'Kembali', 'callback_data' => 'action=mikrotik_menu']]
+        ]
+    ];
+    sendMessage($chatId, $msg, ['reply_markup' => $keyboard]);
 }
 
 function handlePppoeList($chatId) {
