@@ -271,12 +271,13 @@ function handleRegularMessage($chatId, $text) {
 }
 
 function sendMessage($chatId, $text, $options = []) {
-    if (empty(TELEGRAM_BOT_TOKEN)) {
+    $token = (string) getSetting('TELEGRAM_BOT_TOKEN', '');
+    if ($token === '') {
         logError('Telegram bot token not configured');
         return false;
     }
     
-    $url = "https://api.telegram.org/bot" . TELEGRAM_BOT_TOKEN . "/sendMessage";
+    $url = "https://api.telegram.org/bot" . $token . "/sendMessage";
     
     $data = [
         'chat_id' => $chatId,
@@ -312,12 +313,13 @@ function sendMessage($chatId, $text, $options = []) {
 }
 
 function editMessageText($chatId, $messageId, $text, $replyMarkup = null) {
-    if (empty(TELEGRAM_BOT_TOKEN)) {
+    $token = (string) getSetting('TELEGRAM_BOT_TOKEN', '');
+    if ($token === '') {
         logError('Telegram bot token not configured');
         return false;
     }
     
-    $url = "https://api.telegram.org/bot" . TELEGRAM_BOT_TOKEN . "/editMessageText";
+    $url = "https://api.telegram.org/bot" . $token . "/editMessageText";
     
     $data = [
         'chat_id' => $chatId,
@@ -351,7 +353,8 @@ function editMessageText($chatId, $messageId, $text, $replyMarkup = null) {
 }
 
 function answerCallbackQuery($callbackQueryId, $text = null, $showAlert = false) {
-    if (empty(TELEGRAM_BOT_TOKEN)) {
+    $token = (string) getSetting('TELEGRAM_BOT_TOKEN', '');
+    if ($token === '') {
         logError('Telegram bot token not configured');
         return false;
     }
@@ -360,7 +363,7 @@ function answerCallbackQuery($callbackQueryId, $text = null, $showAlert = false)
         return false;
     }
 
-    $url = "https://api.telegram.org/bot" . TELEGRAM_BOT_TOKEN . "/answerCallbackQuery";
+    $url = "https://api.telegram.org/bot" . $token . "/answerCallbackQuery";
 
     $data = [
         'callback_query_id' => $callbackQueryId,
