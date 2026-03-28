@@ -114,6 +114,40 @@ try {
         }
     }
 
+    if (!isCustomerLoggedIn() && (isAdminLoggedIn() || isTechnicianLoggedIn()) && (!empty($ssid) || !empty($password))) {
+        $customer = null;
+        if (!empty($pppoeUsername)) {
+            $customer = fetchOne("SELECT * FROM customers WHERE pppoe_username = ? LIMIT 1", [$pppoeUsername]);
+        }
+        if (!$customer) {
+            $customer = fetchOne("SELECT * FROM customers WHERE serial_number = ? LIMIT 1", [$serial]);
+        }
+
+        if ($customer && !empty($customer['phone'])) {
+            $actor = isAdminLoggedIn() ? 'Admin' : 'Teknisi';
+            $lines = [];
+            $lines[] = "Halo {$customer['name']},";
+            $lines[] = "";
+            $lines[] = "{$actor} baru saja memperbarui pengaturan WiFi Anda:";
+            if (!empty($ssid)) {
+                $lines[] = "SSID: {$ssid}";
+            }
+            if (!empty($password)) {
+                $lines[] = "Password: {$password}";
+            }
+            $lines[] = "";
+            $lines[] = "Jika ada kendala koneksi setelah perubahan ini, silakan restart modem/ONT Anda.";
+
+            sendWhatsApp($customer['phone'], implode("\n", $lines));
+        }
+
+        $logParts = [];
+        if (!empty($ssid)) $logParts[] = 'ssid';
+        if (!empty($password)) $logParts[] = 'password';
+        $logFields = !empty($logParts) ? implode(',', $logParts) : '-';
+        logActivity('WIFI_UPDATE', "Serial: {$serial}, PPPoE: {$pppoeUsername}, Fields: {$logFields}, Actor: " . (isAdminLoggedIn() ? 'admin' : 'technician'));
+    }
+
     echo json_encode(['success' => true, 'message' => 'WiFi settings updated successfully']);
 
 } catch (Exception $e) {
