@@ -139,7 +139,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'MIDTRANS_MERCHANT_CODE' => sanitize($_POST['midtrans_merchant_code']),
                     'DEFAULT_PAYMENT_GATEWAY' => sanitize($_POST['default_payment_gateway']),
                     'WHATSAPP_ADMIN_NUMBER' => sanitize($_POST['whatsapp_admin_number']),
-                    'TELEGRAM_BOT_TOKEN' => sanitize($_POST['telegram_token']),
                     'CRON_TOKEN' => sanitize($_POST['cron_token'])
                 ];
                 
@@ -153,6 +152,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 setFlash('success', 'Pengaturan integrasi berhasil disimpan');
+                redirect('settings.php');
+                break;
+            
+            case 'save_telegram_settings':
+                $telegramSettings = [
+                    'TELEGRAM_BOT_TOKEN' => sanitize($_POST['telegram_bot_token'] ?? ''),
+                    'TELEGRAM_ADMIN_CHAT_ID' => sanitize($_POST['telegram_admin_chat_id'] ?? '')
+                ];
+
+                foreach ($telegramSettings as $key => $value) {
+                    $existing = fetchOne("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+                    if ($existing) {
+                        update('settings', ['setting_value' => $value], 'setting_key = ?', [$key]);
+                    } else {
+                        insert('settings', ['setting_key' => $key, 'setting_value' => $value]);
+                    }
+                }
+                setFlash('success', 'Pengaturan Telegram berhasil disimpan');
+                redirect('settings.php');
+                break;
+
+            case 'save_whatsapp_settings':
+                $whatsAppSettings = [
+                    'DEFAULT_WHATSAPP_GATEWAY' => sanitize($_POST['default_whatsapp_gateway']),
+                    'FONNTE_API_TOKEN' => sanitize($_POST['fonnte_api_token']),
+                    'WABLAS_API_TOKEN' => sanitize($_POST['wablas_api_token']),
+                    'MPWA_API_KEY' => sanitize($_POST['mpwa_api_key']),
+                    'MPWA_SENDER'  => sanitize($_POST['mpwa_sender']),
+                    'MPWA_API_URL' => sanitize($_POST['mpwa_api_url'] ?? ''),
+                    'WHATSAPP_ADMIN_NUMBER' => sanitize($_POST['whatsapp_admin_number'])
+                ];
+
+                foreach ($whatsAppSettings as $key => $value) {
+                    $existing = fetchOne("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+                    if ($existing) {
+                        update('settings', ['setting_value' => $value], 'setting_key = ?', [$key]);
+                    } else {
+                        insert('settings', ['setting_key' => $key, 'setting_value' => $value]);
+                    }
+                }
+                setFlash('success', 'Pengaturan WhatsApp berhasil disimpan');
+                redirect('settings.php');
+                break;
+
+            case 'save_payment_settings':
+                $paymentSettings = [
+                    'TRIPAY_API_KEY' => sanitize($_POST['tripay_api_key']),
+                    'TRIPAY_PRIVATE_KEY' => sanitize($_POST['tripay_private_key']),
+                    'TRIPAY_MERCHANT_CODE' => sanitize($_POST['tripay_merchant_code']),
+                    'TRIPAY_MODE' => sanitize($_POST['tripay_mode'] ?? ''),
+                    'MIDTRANS_API_KEY' => sanitize($_POST['midtrans_api_key']),
+                    'MIDTRANS_MERCHANT_CODE' => sanitize($_POST['midtrans_merchant_code']),
+                    'DEFAULT_PAYMENT_GATEWAY' => sanitize($_POST['default_payment_gateway'])
+                ];
+
+                foreach ($paymentSettings as $key => $value) {
+                    $existing = fetchOne("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+                    if ($existing) {
+                        update('settings', ['setting_value' => $value], 'setting_key = ?', [$key]);
+                    } else {
+                        insert('settings', ['setting_key' => $key, 'setting_value' => $value]);
+                    }
+                }
+                setFlash('success', 'Pengaturan Payment Gateway berhasil disimpan');
+                redirect('settings.php');
+                break;
+
+            case 'save_cron_settings':
+                $cronToken = sanitize($_POST['cron_token'] ?? '');
+                if ($cronToken === '') {
+                    $cronToken = bin2hex(random_bytes(16));
+                }
+                $key = 'CRON_TOKEN';
+                $existing = fetchOne("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+                if ($existing) {
+                    update('settings', ['setting_value' => $cronToken], 'setting_key = ?', [$key]);
+                } else {
+                    insert('settings', ['setting_key' => $key, 'setting_value' => $cronToken]);
+                }
+                setFlash('success', 'Cron token berhasil disimpan');
                 redirect('settings.php');
                 break;
 
@@ -639,19 +718,67 @@ ob_start();
     </form>
 </div>
 
-<!-- Integration Settings -->
+<!-- Telegram Settings -->
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-plug"></i> Integrasi & API</h3>
+        <h3 class="card-title"><i class="fab fa-telegram-plane"></i> Telegram Bot</h3>
     </div>
-    
-    <form method="POST" id="integrationsForm">
-        <input type="hidden" name="action" id="integrationsAction" value="save_integrations">
+
+    <div style="background: rgba(0,200,255,0.08); border: 1px solid var(--neon-cyan); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <i class="fas fa-link" style="color: var(--neon-cyan);"></i>
+            <strong style="color: var(--neon-cyan);">URL Webhook Telegram</strong>
+        </div>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 10px;">
+            Paste URL ini saat setWebhook di BotFather/Telegram API.
+        </p>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="telegram_webhook_url" readonly
+                value="<?php echo APP_URL; ?>/webhooks/telegram.php"
+                style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(0,200,255,0.3); color: #fff; border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer;"
+                onclick="this.select()">
+            <button type="button" onclick="copyWebhookUrl('telegram_webhook_url', this)" style="background: var(--neon-cyan); color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap;">
+                <i class="fas fa-copy"></i> Salin
+            </button>
+        </div>
+    </div>
+
+    <?php
+    $telegramToken = getSettingValue('TELEGRAM_BOT_TOKEN', '');
+    $telegramAdminChatId = getSettingValue('TELEGRAM_ADMIN_CHAT_ID', '');
+    ?>
+
+    <form method="POST">
+        <input type="hidden" name="action" value="save_telegram_settings">
         <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
-        
-        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">WhatsApp Gateway</h4>
-        
-        <!-- WhatsApp Webhook URL Info Box -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label class="form-label">Telegram Bot Token</label>
+                <input type="password" name="telegram_bot_token" class="form-control" value="<?php echo htmlspecialchars($telegramToken); ?>" placeholder="123456:ABC-DEF...">
+                <small style="color: var(--text-muted);">Token dari BotFather. Disimpan di database settings (override config.php).</small>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Telegram Admin Chat ID</label>
+                <input type="text" name="telegram_admin_chat_id" class="form-control" value="<?php echo htmlspecialchars($telegramAdminChatId); ?>" placeholder="contoh: 123456789 atau -1001234567890">
+                <small style="color: var(--text-muted);">Chat ID admin/grup yang diizinkan mengakses menu admin bot.</small>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Simpan Telegram
+        </button>
+    </form>
+</div>
+
+<!-- WhatsApp Settings -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fab fa-whatsapp"></i> WhatsApp Gateway</h3>
+    </div>
+
+    <form method="POST">
+        <input type="hidden" name="action" value="save_whatsapp_settings">
+        <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
+
         <div style="background: rgba(0,200,255,0.08); border: 1px solid var(--neon-cyan); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                 <i class="fas fa-link" style="color: var(--neon-cyan);"></i>
@@ -670,7 +797,7 @@ ob_start();
                 </button>
             </div>
         </div>
-        
+
         <div class="form-group">
             <label class="form-label">WhatsApp Gateway Default</label>
             <select name="default_whatsapp_gateway" class="form-control">
@@ -679,19 +806,19 @@ ob_start();
                 <option value="mpwa" <?php echo ($settings['DEFAULT_WHATSAPP_GATEWAY'] ?? '') === 'mpwa' ? 'selected' : ''; ?>>MPWA</option>
             </select>
         </div>
-        
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div class="form-group">
                 <label class="form-label">Fonnte API Token</label>
                 <input type="password" name="fonnte_api_token" class="form-control" value="<?php echo htmlspecialchars($settings['FONNTE_API_TOKEN'] ?? ''); ?>" placeholder="Masukkan API Token Fonnte">
             </div>
-            
+
             <div class="form-group">
                 <label class="form-label">Wablas API Token</label>
                 <input type="password" name="wablas_api_token" class="form-control" value="<?php echo htmlspecialchars($settings['WABLAS_API_TOKEN'] ?? ''); ?>" placeholder="Masukkan API Token Wablas">
             </div>
         </div>
-        
+
         <div class="form-group">
             <label class="form-label">MPWA API Key</label>
             <input type="password" name="mpwa_api_key" class="form-control" value="<?php echo htmlspecialchars($settings['MPWA_API_KEY'] ?? ''); ?>" placeholder="Masukkan API Key MPWA">
@@ -715,37 +842,54 @@ ob_start();
             <small style="color: var(--text-muted);">Nomor WhatsApp admin untuk mengelola bot (format: 628...)</small>
         </div>
 
-        <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 10px; padding: 16px 20px; margin-top: 20px;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <i class="fab fa-whatsapp" style="color: #22c55e;"></i>
-                <strong style="color: #22c55e;">Test Kirim WhatsApp</strong>
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Simpan WhatsApp
+        </button>
+    </form>
+</div>
+
+<!-- WhatsApp Test -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-paper-plane"></i> Test WhatsApp</h3>
+    </div>
+
+    <form method="POST" style="margin-bottom: 14px;">
+        <input type="hidden" name="action" value="test_whatsapp">
+        <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Nomor Tujuan</label>
+                <input type="text" name="test_whatsapp_phone" class="form-control" placeholder="628xxxxxxxxxx atau 08xxxxxxxxxx">
             </div>
-            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 12px;">
-                Gunakan ini untuk memastikan token/gateway WhatsApp sudah benar. Ini menguji pengiriman pesan keluar (bukan webhook masuk).
-            </p>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end;">
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label">Nomor Tujuan</label>
-                    <input type="text" name="test_whatsapp_phone" class="form-control" placeholder="628xxxxxxxxxx atau 08xxxxxxxxxx">
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label">Pesan Test</label>
-                    <input type="text" name="test_whatsapp_message" class="form-control" value="Test WhatsApp GEMBOK" placeholder="Test WhatsApp">
-                </div>
-                <div class="form-group" style="margin-bottom: 0; grid-column: 1 / -1;">
-                    <button type="submit" class="btn btn-success" onclick="setIntegrationsAction('test_whatsapp')"><i class="fas fa-paper-plane"></i> Kirim Test</button>
-                </div>
-                <div class="form-group" style="margin-bottom: 0; grid-column: 1 / -1;">
-                    <button type="submit" class="btn btn-dark" onclick="setIntegrationsAction('test_mpwa_connection')"><i class="fas fa-network-wired"></i> Test Koneksi MPWA</button>
-                </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Pesan Test</label>
+                <input type="text" name="test_whatsapp_message" class="form-control" value="Test WhatsApp GEMBOK" placeholder="Test WhatsApp">
+            </div>
+            <div class="form-group" style="margin-bottom: 0; grid-column: 1 / -1;">
+                <button type="submit" class="btn btn-success"><i class="fas fa-paper-plane"></i> Kirim Test</button>
             </div>
         </div>
-        
-        <hr style="margin: 30px 0; border-color: var(--border-color);">
-        
-        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">Payment Gateway (Tripay)</h4>
-        
-        <!-- Tripay Webhook URL Info Box -->
+    </form>
+
+    <form method="POST">
+        <input type="hidden" name="action" value="test_mpwa_connection">
+        <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
+        <button type="submit" class="btn btn-dark"><i class="fas fa-network-wired"></i> Test Koneksi MPWA</button>
+    </form>
+</div>
+
+<!-- Payment Settings -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-credit-card"></i> Payment Gateway</h3>
+    </div>
+
+    <form method="POST">
+        <input type="hidden" name="action" value="save_payment_settings">
+        <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
+
+        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">Tripay</h4>
         <div style="background: rgba(0,200,255,0.08); border: 1px solid var(--neon-cyan); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                 <i class="fas fa-link" style="color: var(--neon-cyan);"></i>
@@ -764,24 +908,24 @@ ob_start();
                 </button>
             </div>
         </div>
-        
+
         <div class="form-group">
             <label class="form-label">Tripay API Key</label>
             <input type="text" name="tripay_api_key" class="form-control" value="<?php echo htmlspecialchars($settings['TRIPAY_API_KEY'] ?? ''); ?>" placeholder="Masukkan API Key Tripay">
         </div>
-        
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div class="form-group">
                 <label class="form-label">Tripay Private Key</label>
                 <input type="password" name="tripay_private_key" class="form-control" value="<?php echo htmlspecialchars($settings['TRIPAY_PRIVATE_KEY'] ?? ''); ?>" placeholder="Masukkan Private Key">
             </div>
-            
+
             <div class="form-group">
                 <label class="form-label">Tripay Merchant Code</label>
                 <input type="text" name="tripay_merchant_code" class="form-control" value="<?php echo htmlspecialchars($settings['TRIPAY_MERCHANT_CODE'] ?? ''); ?>" placeholder="Masukkan Merchant Code">
             </div>
         </div>
-        
+
         <div class="form-group">
             <label class="form-label">Tripay Mode</label>
             <select name="tripay_mode" class="form-control">
@@ -790,12 +934,10 @@ ob_start();
             </select>
             <small style="color: var(--text-muted);">Gunakan Sandbox hanya jika memakai kredensial simulator Tripay.</small>
         </div>
-        
+
         <hr style="margin: 30px 0; border-color: var(--border-color);">
-        
-        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">Payment Gateway (Midtrans)</h4>
-        
-        <!-- Midtrans Webhook URL Info Box -->
+
+        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">Midtrans</h4>
         <div style="background: rgba(0,200,255,0.08); border: 1px solid var(--neon-cyan); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                 <i class="fas fa-link" style="color: var(--neon-cyan);"></i>
@@ -814,21 +956,20 @@ ob_start();
                 </button>
             </div>
         </div>
-        
+
         <div class="form-group">
             <label class="form-label">Midtrans API Key</label>
             <input type="text" name="midtrans_api_key" class="form-control" value="<?php echo htmlspecialchars($settings['MIDTRANS_API_KEY'] ?? ''); ?>" placeholder="Masukkan API Key Midtrans">
         </div>
-        
+
         <div class="form-group">
             <label class="form-label">Midtrans Merchant Code</label>
             <input type="text" name="midtrans_merchant_code" class="form-control" value="<?php echo htmlspecialchars($settings['MIDTRANS_MERCHANT_CODE'] ?? ''); ?>" placeholder="Masukkan Merchant Code">
         </div>
-        
+
         <hr style="margin: 30px 0; border-color: var(--border-color);">
-        
-        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">Pengaturan Pembayaran</h4>
-        
+
+        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">Default</h4>
         <div class="form-group">
             <label class="form-label">Payment Gateway Default</label>
             <select name="default_payment_gateway" class="form-control">
@@ -836,12 +977,23 @@ ob_start();
                 <option value="midtrans" <?php echo ($settings['DEFAULT_PAYMENT_GATEWAY'] ?? '') === 'midtrans' ? 'selected' : ''; ?>>Midtrans</option>
             </select>
         </div>
-        
-        <hr style="margin: 30px 0; border-color: var(--border-color);">
-        
-        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">Cronjob & Task Scheduler</h4>
-        
-        <!-- Cronjob Info Box -->
+
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Simpan Payment
+        </button>
+    </form>
+</div>
+
+<!-- Cron Settings -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-clock"></i> Cronjob & Task Scheduler</h3>
+    </div>
+
+    <form method="POST">
+        <input type="hidden" name="action" value="save_cron_settings">
+        <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
+
         <div style="background: rgba(0,255,136,0.08); border: 1px solid #00ff88; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                 <i class="fas fa-clock" style="color: #00ff88;"></i>
@@ -850,7 +1002,7 @@ ob_start();
             <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 10px;">
                 Gunakan salah satu metode di bawah ini untuk menjalankan tugas otomatis (isolir otomatis, kirim invoice, dll). Sangat disarankan untuk menjalankan setiap <strong>1 menit</strong>.
             </p>
-            
+
             <div style="margin-bottom: 15px;">
                 <label style="display: block; font-size: 12px; color: #00ff88; margin-bottom: 5px;">Metode 1: Script CLI (Direkomendasikan untuk VPS)</label>
                 <?php
@@ -884,11 +1036,10 @@ ob_start();
             <div>
                 <label style="display: block; font-size: 12px; color: #00ff88; margin-bottom: 5px;">Metode 2: URL Task (Untuk aaPanel / Cloud Hosting)</label>
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <?php 
+                    <?php
                     $cronToken = getSettingValue('CRON_TOKEN');
                     if (!$cronToken) {
                         $cronToken = bin2hex(random_bytes(16));
-                        // This will be saved on next save_integrations or lazy sync in run.php
                     }
                     $cronUrl = APP_URL . "/cron/run.php?token=" . $cronToken;
                     ?>
@@ -903,12 +1054,12 @@ ob_start();
                 <div style="color: var(--text-muted); font-size: 12px; margin-top: 6px;">
                     Pastikan <strong>APP_URL</strong> sudah menggunakan domain/IP server (bukan <strong>localhost</strong>) jika dipanggil dari hosting/panel.
                 </div>
-                <input type="hidden" name="cron_token" value="<?php echo $cronToken; ?>">
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary" onclick="setIntegrationsAction('save_integrations')">
-            <i class="fas fa-save"></i> Simpan
+        <input type="hidden" name="cron_token" value="<?php echo htmlspecialchars($cronToken); ?>">
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Simpan Cron Token
         </button>
     </form>
 </div>
@@ -1060,12 +1211,6 @@ function copyWebhookUrl(inputId, btn) {
     });
 }
 
-function setIntegrationsAction(action) {
-    const el = document.getElementById('integrationsAction');
-    if (el) {
-        el.value = action;
-    }
-}
 </script>
 
 <?php
