@@ -104,6 +104,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msg .= "Periode: $monthsCount bulan\n";
             $msg .= "Via: Admin\n\n";
             $msg .= "Terima kasih.";
+            if (function_exists('getWhatsAppFooter')) {
+                $msg .= getWhatsAppFooter();
+            }
             sendWhatsApp($customer['phone'], $msg);
         }
 
