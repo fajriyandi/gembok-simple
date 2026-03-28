@@ -439,6 +439,9 @@ function sendPaymentReminder($invoiceNumber, $amount, $customerName, $customerPh
     $message .= "Nominal: " . formatCurrency($amount) . "\n\n";
     $message .= "Mohon segera lakukan pembayaran untuk mengaktifkan kembali koneksi internet Anda.\n\n";
     $message .= "Terima kasih.";
+    if (function_exists('getWhatsAppFooter')) {
+        $message .= getWhatsAppFooter();
+    }
     
     return sendWhatsApp($customerPhone, $message);
 }

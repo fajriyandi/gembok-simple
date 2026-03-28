@@ -107,6 +107,32 @@ function sendWhatsApp($phone, $message)
     return $result['success'] ?? false;
 }
 
+function getWhatsAppFooter()
+{
+    $appName = trim((string) getSetting('app_name', defined('APP_NAME') ? APP_NAME : ''));
+    $admin = trim((string) getSetting('WHATSAPP_ADMIN_NUMBER', ''));
+    $adminDigits = preg_replace('/\D+/', '', $admin);
+    if ($adminDigits !== '') {
+        if (strpos($adminDigits, '0') === 0) {
+            $adminDigits = '62' . substr($adminDigits, 1);
+        } elseif (strpos($adminDigits, '62') !== 0) {
+            $adminDigits = '62' . $adminDigits;
+        }
+    }
+
+    $lines = [];
+    if ($appName !== '') {
+        $lines[] = $appName;
+    }
+    if ($adminDigits !== '') {
+        $lines[] = 'CS/WA: ' . $adminDigits;
+    }
+    if (empty($lines)) {
+        return '';
+    }
+    return "\n\n" . implode("\n", $lines);
+}
+
 function getCustomerDueDate($customer, $baseDate = null)
 {
     $baseTimestamp = $baseDate ? strtotime($baseDate) : time();
@@ -396,6 +422,7 @@ function isolateCustomer($customerId, $options = [])
         // Send WhatsApp notification
         if ($sendWhatsapp) {
             $message = "Halo {$customer['name']},\n\nPembayaran internet Anda sudah melewati tanggal jatuh tempo.\n\nMohon segera lakukan pembayaran untuk mengaktifkan kembali koneksi internet Anda.\n\nTerima kasih.";
+            $message .= getWhatsAppFooter();
             sendWhatsApp($customer['phone'], $message);
         }
     } elseif ($package && !empty($customer['pppoe_username']) && empty($package['profile_isolir'])) {
@@ -408,11 +435,15 @@ function isolateCustomer($customerId, $options = [])
 }
 
 // Unisolate customer
-function unisolateCustomer($customerId)
+function unisolateCustomer($customerId, $options = [])
 {
     $customer = fetchOne("SELECT * FROM customers WHERE id = ?", [$customerId]);
     if (!$customer) {
         return false;
+    }
+
+    if (($customer['status'] ?? '') !== 'isolated') {
+        return true;
     }
 
     // Update status
@@ -423,6 +454,16 @@ function unisolateCustomer($customerId)
     if ($package && !empty($customer['pppoe_username'])) {
         // Call MikroTik API to change profile on assigned router
         mikrotikSetProfile($customer['pppoe_username'], $package['profile_normal'], $customer['router_id']);
+    }
+
+    $sendWhatsapp = false;
+    if (is_array($options) && array_key_exists('send_whatsapp', $options)) {
+        $sendWhatsapp = (bool) $options['send_whatsapp'];
+    }
+    if ($sendWhatsapp && !empty($customer['phone'])) {
+        $message = "Halo {$customer['name']},\n\nLayanan internet Anda sudah aktif kembali.\n\nTerima kasih.";
+        $message .= getWhatsAppFooter();
+        sendWhatsApp($customer['phone'], $message);
     }
 
     logActivity('UNISOLATE_CUSTOMER', "Customer ID: {$customerId}");
@@ -1517,6 +1558,7 @@ function sendInvoicePaidWhatsapp($invoiceNumber, $gateway = '', $paymentData = [
         $message .= "Waktu: {$paidAt}\n";
     }
     $message .= "\nTerima kasih. Jika layanan sempat terisolir, sistem akan membuka otomatis.";
+    $message .= getWhatsAppFooter();
 
     $sent = sendWhatsApp($phone, $message);
 
