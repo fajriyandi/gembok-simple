@@ -148,6 +148,22 @@
             transition: 0.3s;
         }
         .nav-links a:hover::after { width: 100%; }
+
+        .nav-toggle {
+            display: none;
+            width: 44px;
+            height: 44px;
+            align-items: center;
+            justify-content: center;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--light);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 18px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
         
         /* Dropdown Menu */
         .dropdown { position: relative; display: inline-block; }
@@ -353,7 +369,34 @@
         @media (max-width: 768px) {
             .hero h1 { font-size: 2.5rem; }
             .navbar { padding: 15px 20px; }
-            .nav-links { display: none; }
+            .nav-toggle { display: inline-flex; }
+            .nav-links {
+                display: none;
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: 100%;
+                padding: 14px 20px 18px;
+                background: rgba(0, 0, 0, 0.35);
+                border-bottom: 1px solid var(--glass-border);
+                flex-direction: column;
+                gap: 14px;
+                align-items: stretch;
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+            }
+            .nav-links.open { display: flex; }
+            .dropdown:hover .dropdown-content { display: none; }
+            .dropdown.open .dropdown-content {
+                display: block;
+                position: static;
+                margin-top: 10px;
+                width: 100%;
+            }
+            .nav-links a { width: 100%; }
+            .nav-links .dropdown { width: 100%; }
+            .nav-links .dropdown-content { width: 100%; box-sizing: border-box; }
+            .login-btn { width: 100%; text-align: center; display: inline-flex; justify-content: center; }
             .features, .packages, .contact { padding: 60px 20px; }
             .cta-buttons { flex-direction: column; }
         }
@@ -367,18 +410,21 @@
 
     <nav class="navbar glass">
         <a href="#" class="logo"><i class="fas fa-wifi"></i> <?php echo $appName; ?></a>
+        <button class="nav-toggle" type="button" onclick="window.__gembokToggleNav && window.__gembokToggleNav()"><i class="fas fa-bars"></i></button>
         <div class="nav-links">
             <a href="#features">Fitur</a>
             <a href="#packages">Paket</a>
+            <a href="voucher-order.php">Voucher</a>
+            <a href="#" onclick="window.__gembokOpenRegisterModal && window.__gembokOpenRegisterModal(); return false;">Daftar</a>
             <a href="#contact">Kontak</a>
-        </div>
-        <div class="dropdown">
-            <a href="#" class="login-btn">Login <i class="fas fa-chevron-down"></i></a>
-            <div class="dropdown-content">
-                <a href="portal/login.php"><i class="fas fa-user"></i> Pelanggan</a>
-                <a href="sales/login.php"><i class="fas fa-user-tie"></i> Sales / Agen</a>
-                <a href="technician/login.php"><i class="fas fa-tools"></i> Teknisi</a>
-                <a href="admin/login.php"><i class="fas fa-user-shield"></i> Admin</a>
+            <div class="dropdown">
+                <a href="#" class="login-btn" onclick="window.__gembokToggleLogin && window.__gembokToggleLogin(event)">Login <i class="fas fa-chevron-down"></i></a>
+                <div class="dropdown-content">
+                    <a href="portal/login.php"><i class="fas fa-user"></i> Pelanggan</a>
+                    <a href="sales/login.php"><i class="fas fa-user-tie"></i> Sales / Agen</a>
+                    <a href="technician/login.php"><i class="fas fa-tools"></i> Teknisi</a>
+                    <a href="admin/login.php"><i class="fas fa-user-shield"></i> Admin</a>
+                </div>
             </div>
         </div>
     </nav>
@@ -424,16 +470,7 @@
                 <div class="package-price"><?php echo formatCurrency($pkg['price']); ?></div>
                 <p style="color: var(--gray);"><?php echo htmlspecialchars($pkg['description'] ?? ''); ?></p>
                 <br>
-                <?php
-                // Clean phone number and ensure proper format
-                $waPhone = preg_replace('/[^0-9]/', '', $contactPhone);
-                // If starts with 0, replace with 62
-                if (substr($waPhone, 0, 1) === '0') {
-                    $waPhone = '62' . substr($waPhone, 1);
-                }
-                $waMessage = urlencode("Halo, saya tertarik dengan paket " . htmlspecialchars($pkg['name']) . " - " . formatCurrency($pkg['price']));
-                ?>
-                <a href="https://wa.me/<?php echo $waPhone; ?>?text=<?php echo $waMessage; ?>" target="_blank" class="btn btn-primary" style="width: 100%;">Pilih Paket</a>
+                <a href="?reg=open&pkg=<?php echo rawurlencode((string) $pkg['name']); ?>#register" class="btn btn-primary" style="width: 100%;" onclick="try { window.__gembokOpenRegisterModalWithPackage && window.__gembokOpenRegisterModalWithPackage(<?php echo json_encode((string) $pkg['name']); ?>); return false; } catch (e) { return true; }">Pilih Paket</a>
             </div>
             <?php endforeach; ?>
         </div>
@@ -483,6 +520,51 @@
                     });
             });
         }
+
+        (function() {
+            const navLinks = document.querySelector('.nav-links');
+            const dropdown = document.querySelector('.dropdown');
+
+            window.__gembokToggleNav = function() {
+                if (!navLinks) return;
+                navLinks.classList.toggle('open');
+                if (!navLinks.classList.contains('open') && dropdown) {
+                    dropdown.classList.remove('open');
+                }
+            };
+
+            window.__gembokToggleLogin = function(e) {
+                if (e) e.preventDefault();
+                if (!dropdown) return;
+                dropdown.classList.toggle('open');
+                if (navLinks && !navLinks.classList.contains('open')) {
+                    navLinks.classList.add('open');
+                }
+            };
+
+            document.addEventListener('click', function(e) {
+                const target = e.target;
+                if (!target) return;
+                const inNav = navLinks && navLinks.contains(target);
+                const inDropdown = dropdown && dropdown.contains(target);
+                const isToggle = target.closest && target.closest('.nav-toggle');
+                if (!inNav && !inDropdown && !isToggle) {
+                    if (navLinks) navLinks.classList.remove('open');
+                    if (dropdown) dropdown.classList.remove('open');
+                }
+            });
+
+            if (navLinks) {
+                navLinks.addEventListener('click', function(e) {
+                    const a = e.target && e.target.closest ? e.target.closest('a') : null;
+                    const href = a && a.getAttribute ? a.getAttribute('href') : null;
+                    if (a && href && href.startsWith('#') && href !== '#' && !a.closest('.dropdown')) {
+                        navLinks.classList.remove('open');
+                        if (dropdown) dropdown.classList.remove('open');
+                    }
+                });
+            }
+        })();
     </script>
 </body>
 </html>
