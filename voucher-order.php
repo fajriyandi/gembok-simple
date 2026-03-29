@@ -137,6 +137,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 <div class="container">
     <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;">
+            <a href="<?php echo htmlspecialchars(rtrim(APP_URL, '/') . '/index.php'); ?>" style="color:#94a3b8;text-decoration:none;font-size:13px;">← Kembali</a>
+            <a href="<?php echo htmlspecialchars(rtrim(APP_URL, '/') . '/index.php#packages'); ?>" style="color:#67e8f9;text-decoration:none;font-size:13px;">Lihat Paket</a>
+        </div>
         <h1 class="title">Voucher Hotspot</h1>
         <p class="subtitle">Voucher akan dikirim ke WhatsApp.</p>
         <?php if ($errorMessage !== ''): ?>
