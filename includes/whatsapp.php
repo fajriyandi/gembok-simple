@@ -16,7 +16,7 @@ function getWhatsAppSetting($key, $constantValue) {
     try {
         $row = fetchOne("SELECT setting_value FROM settings WHERE setting_key = ?", [$key]);
         return $row ? $row['setting_value'] : '';
-    } catch (Exception $_) {
+    } catch (Exception) {
         return '';
     }
 }
@@ -31,6 +31,7 @@ function sendFonnteWhatsApp($phone, $message) {
     $token = getWhatsAppSetting('FONNTE_API_TOKEN', defined('FONNTE_API_TOKEN') ? constant('FONNTE_API_TOKEN') : '');
     
     if (empty($token)) {
+        logWhatsAppError("SENDER_ERROR: Fonnte API token not configured");
         return ['success' => false, 'message' => 'Fonnte API token not configured'];
     }
     
@@ -51,17 +52,24 @@ function sendFonnteWhatsApp($phone, $message) {
         'Authorization: ' . $token
     ]);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
     
     $response = curl_exec($ch);
+    $curlErrno = curl_errno($ch);
+    $curlError = curl_error($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     unset($ch);
     
-    if ($httpCode === 200) {
+    if ($response === false || $httpCode === 0) {
+        $errorMsg = "Failed to send WhatsApp via Fonnte (HTTP $httpCode, cURL $curlErrno): $curlError";
+        logWhatsAppError("SENDER_ERROR: " . $errorMsg);
+        return ['success' => false, 'message' => $errorMsg];
+    } elseif ($httpCode === 200) {
         return ['success' => true, 'data' => json_decode($response, true)];
     } else {
         $errorMsg = "Failed to send WhatsApp via Fonnte (HTTP $httpCode): $response";
-        file_put_contents(__DIR__ . '/../logs/whatsapp_error.log', "[" . date('Y-m-d H:i:s') . "] SENDER_ERROR: " . $errorMsg . "\n", FILE_APPEND);
+        logWhatsAppError("SENDER_ERROR: " . $errorMsg);
         return ['success' => false, 'message' => $errorMsg];
     }
 }
@@ -71,6 +79,7 @@ function sendWablasWhatsApp($phone, $message) {
     $token = getWhatsAppSetting('WABLAS_API_TOKEN', defined('WABLAS_API_TOKEN') ? constant('WABLAS_API_TOKEN') : '');
     
     if (empty($token)) {
+        logWhatsAppError("SENDER_ERROR: Wablas API token not configured");
         return ['success' => false, 'message' => 'Wablas API token not configured'];
     }
     
@@ -88,17 +97,24 @@ function sendWablasWhatsApp($phone, $message) {
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
     
     $response = curl_exec($ch);
+    $curlErrno = curl_errno($ch);
+    $curlError = curl_error($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     unset($ch);
     
-    if ($httpCode === 200) {
+    if ($response === false || $httpCode === 0) {
+        $errorMsg = "Failed to send WhatsApp via Wablas (HTTP $httpCode, cURL $curlErrno): $curlError";
+        logWhatsAppError("SENDER_ERROR: " . $errorMsg);
+        return ['success' => false, 'message' => $errorMsg];
+    } elseif ($httpCode === 200) {
         return ['success' => true, 'data' => json_decode($response, true)];
     } else {
         $errorMsg = "Failed to send WhatsApp via Wablas (HTTP $httpCode): $response";
-        file_put_contents(__DIR__ . '/../logs/whatsapp_error.log', "[" . date('Y-m-d H:i:s') . "] SENDER_ERROR: " . $errorMsg . "\n", FILE_APPEND);
+        logWhatsAppError("SENDER_ERROR: " . $errorMsg);
         return ['success' => false, 'message' => $errorMsg];
     }
 }
@@ -143,8 +159,8 @@ function sendMpwaWhatsApp($phone, $message) {
         'User-Agent: GEMBOK/2.x (MPWA Client)'
     ]);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
     
     $response = curl_exec($ch);
     $curlErrno = curl_errno($ch);

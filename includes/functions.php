@@ -95,6 +95,10 @@ function sendWhatsApp($phone, $message)
 
     // Get default WhatsApp gateway from settings
     $defaultGateway = fetchOne("SELECT setting_value FROM settings WHERE setting_key = ?", ['DEFAULT_WHATSAPP_GATEWAY'])['setting_value'] ?? 'fonnte';
+    $defaultGateway = trim((string) $defaultGateway);
+    if ($defaultGateway === '') {
+        $defaultGateway = 'fonnte';
+    }
 
     // Format phone number (62 format)
     if (substr($phone, 0, 2) === '08') {
@@ -104,7 +108,14 @@ function sendWhatsApp($phone, $message)
     // Send using selected gateway
     $result = sendWhatsAppMessage($phone, $message, $defaultGateway);
 
-    return $result['success'] ?? false;
+    $success = $result['success'] ?? false;
+    if (!$success) {
+        $err = (string) ($result['message'] ?? 'Unknown error');
+        if (function_exists('logWhatsAppError')) {
+            logWhatsAppError("SEND_FAILED: gateway={$defaultGateway} to={$phone} msg=" . $err);
+        }
+    }
+    return $success;
 }
 
 function getWhatsAppFooter()
