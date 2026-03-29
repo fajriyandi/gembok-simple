@@ -769,6 +769,120 @@ function mikrotikParseProfiles($response)
     return $profiles;
 }
 
+function mikrotikAddPppoeProfile($data)
+{
+    $socket = getMikrotikConnection();
+    if (!$socket) {
+        return false;
+    }
+
+    mikrotikWrite($socket, '/ppp/profile/add');
+    if (isset($data['name'])) {
+        mikrotikWrite($socket, '=name=' . $data['name']);
+    }
+    if (isset($data['local-address'])) {
+        mikrotikWrite($socket, '=local-address=' . $data['local-address']);
+    }
+    if (isset($data['remote-address'])) {
+        mikrotikWrite($socket, '=remote-address=' . $data['remote-address']);
+    }
+    if (isset($data['rate-limit'])) {
+        mikrotikWrite($socket, '=rate-limit=' . $data['rate-limit']);
+    }
+    if (isset($data['dns-server'])) {
+        mikrotikWrite($socket, '=dns-server=' . $data['dns-server']);
+    }
+    if (isset($data['comment'])) {
+        mikrotikWrite($socket, '=comment=' . $data['comment']);
+    }
+    mikrotikWrite($socket, '');
+
+    $response = mikrotikReadSentence($socket);
+    foreach ($response as $word) {
+        if (strpos($word, '!trap') === 0) {
+            $trap = mikrotikTrapMessageFromResponse($response);
+            if ($trap !== '') {
+                logError('MikroTik add PPPoE profile failed: ' . $trap);
+            } else {
+                logError('MikroTik add PPPoE profile failed.');
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
+function mikrotikUpdatePppoeProfile($id, $data)
+{
+    $socket = getMikrotikConnection();
+    if (!$socket) {
+        return false;
+    }
+
+    mikrotikWrite($socket, '/ppp/profile/set');
+    mikrotikWrite($socket, '=.id=' . $id);
+    if (isset($data['name'])) {
+        mikrotikWrite($socket, '=name=' . $data['name']);
+    }
+    if (isset($data['local-address'])) {
+        mikrotikWrite($socket, '=local-address=' . $data['local-address']);
+    }
+    if (isset($data['remote-address'])) {
+        mikrotikWrite($socket, '=remote-address=' . $data['remote-address']);
+    }
+    if (isset($data['rate-limit'])) {
+        mikrotikWrite($socket, '=rate-limit=' . $data['rate-limit']);
+    }
+    if (isset($data['dns-server'])) {
+        mikrotikWrite($socket, '=dns-server=' . $data['dns-server']);
+    }
+    if (isset($data['comment'])) {
+        mikrotikWrite($socket, '=comment=' . $data['comment']);
+    }
+    mikrotikWrite($socket, '');
+
+    $response = mikrotikReadSentence($socket);
+    foreach ($response as $word) {
+        if (strpos($word, '!trap') === 0) {
+            $trap = mikrotikTrapMessageFromResponse($response);
+            if ($trap !== '') {
+                logError('MikroTik update PPPoE profile failed: ' . $trap);
+            } else {
+                logError('MikroTik update PPPoE profile failed.');
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
+function mikrotikDeletePppoeProfile($id)
+{
+    $socket = getMikrotikConnection();
+    if (!$socket) {
+        return false;
+    }
+
+    mikrotikWrite($socket, '/ppp/profile/remove');
+    mikrotikWrite($socket, '=.id=' . $id);
+    mikrotikWrite($socket, '');
+
+    $response = mikrotikReadSentence($socket);
+    fclose($socket);
+    foreach ($response as $word) {
+        if (strpos($word, '!trap') === 0) {
+            $trap = mikrotikTrapMessageFromResponse($response);
+            if ($trap !== '') {
+                logError('MikroTik delete PPPoE profile failed: ' . $trap);
+            } else {
+                logError('MikroTik delete PPPoE profile failed.');
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
 // Get MikroTik Hotspot Servers
 function mikrotikGetHotspotServers()
 {
