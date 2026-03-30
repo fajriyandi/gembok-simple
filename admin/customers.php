@@ -100,6 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
             case 'edit':
                 $customerId = (int)$_POST['customer_id'];
+                $existing = fetchOne("SELECT pppoe_username FROM customers WHERE id = ?", [$customerId]);
+                $oldPppoe = $existing['pppoe_username'] ?? '';
                 $data = [
                     'name' => sanitize($_POST['name']),
                     'phone' => sanitize($_POST['phone']),
@@ -119,9 +121,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if (update('customers', $data, 'id = ?', [$customerId])) {
                     try {
-                        $serial = $data['pppoe_username'];
-                        if (!empty($serial)) {
-                            genieacsSetParameter($serial, 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username', $serial);
+                        $newPppoe = $data['pppoe_username'];
+                        if (!empty($oldPppoe) && !empty($newPppoe) && $oldPppoe !== $newPppoe) {
+                            $device = genieacsFindDeviceByPppoe($oldPppoe);
+                            if (!$device) {
+                                $device = genieacsGetDevice($oldPppoe);
+                            }
+                            if ($device) {
+                                genieacsSetParameterValues($device['_id'] ?? $oldPppoe, [
+                                    'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username' => $newPppoe
+                                ]);
+                            }
+                            update('onu_locations', ['serial_number' => $newPppoe, 'updated_at' => date('Y-m-d H:i:s')], 'serial_number = ?', [$oldPppoe]);
                         }
                     } catch (Exception $e) {
                         logError('GenieACS sync (edit customer) failed: ' . $e->getMessage());
