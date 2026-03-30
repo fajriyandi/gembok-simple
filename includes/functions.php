@@ -1335,6 +1335,30 @@ function ensureBackupDirectory()
     return is_dir($backupDir);
 }
 
+function ensureCustomersAutoIsolateColumn()
+{
+    static $checked = false;
+    if ($checked) {
+        return true;
+    }
+    if (!tableExists('customers')) {
+        return false;
+    }
+    try {
+        $pdo = getDB();
+        $stmt = $pdo->query("SHOW COLUMNS FROM customers LIKE 'auto_isolate'");
+        $exists = $stmt && $stmt->rowCount() > 0;
+        if (!$exists) {
+            $pdo->exec("ALTER TABLE customers ADD COLUMN auto_isolate TINYINT(1) NOT NULL DEFAULT 1 AFTER status");
+        }
+        $checked = true;
+        return true;
+    } catch (Exception $e) {
+        logError('Ensure customers.auto_isolate failed: ' . $e->getMessage());
+        return false;
+    }
+}
+
 function sanitizeBackupFilename($filename)
 {
     $name = basename((string) $filename);
