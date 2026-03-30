@@ -103,6 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $data = [
                     'name' => sanitize($_POST['name']),
                     'phone' => sanitize($_POST['phone']),
+                    'pppoe_username' => sanitize($_POST['pppoe_username']),
                     'package_id' => (int)$_POST['package_id'],
                     'router_id' => (int)($_POST['router_id'] ?? 0),
                     'isolation_date' => (int)$_POST['isolation_date'],
@@ -117,6 +118,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 if (update('customers', $data, 'id = ?', [$customerId])) {
+                    try {
+                        $serial = $data['pppoe_username'];
+                        if (!empty($serial)) {
+                            genieacsSetParameter($serial, 'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username', $serial);
+                        }
+                    } catch (Exception $e) {
+                        logError('GenieACS sync (edit customer) failed: ' . $e->getMessage());
+                    }
                     // Sync to onu_locations if requested
                     $saveOnu = isset($_POST['save_onu']) && $_POST['save_onu'] == '1';
                     $odpId = isset($_POST['odp_id']) && $_POST['odp_id'] !== '' ? (int) $_POST['odp_id'] : null;
@@ -651,7 +660,7 @@ ob_start();
                 
                 <div class="form-group">
                     <label class="form-label">Username PPPoE</label>
-                    <input type="text" name="pppoe_username" id="edit_pppoe_username" class="form-control" required placeholder="Username di MikroTik" readonly style="background: rgba(255,255,255,0.05); cursor: not-allowed;">
+                    <input type="text" name="pppoe_username" id="edit_pppoe_username" class="form-control" required placeholder="Username PPPoE (disimpan internal, tidak update MikroTik)">
                     <small style="color: var(--text-muted);">Username PPPoE tidak dapat diubah</small>
                 </div>
                 
