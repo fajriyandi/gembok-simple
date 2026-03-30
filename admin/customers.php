@@ -170,6 +170,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 redirect('customers.php');
                 break;
+
+            case 'reset_portal_password':
+                $customerId = (int)($_POST['customer_id'] ?? 0);
+                $customer = fetchOne("SELECT id, name, phone FROM customers WHERE id = ?", [$customerId]);
+                if (!$customer) {
+                    setFlash('error', 'Pelanggan tidak ditemukan');
+                    redirect('customers.php');
+                }
+
+                $tempPassword = '1234';
+                if (setCustomerPortalPassword($customerId, $tempPassword)) {
+                    $waStatus = '';
+                    $phone = (string) ($customer['phone'] ?? '');
+                    if (trim($phone) !== '') {
+                        $msg = "Halo {$customer['name']},\n\n";
+                        $msg .= "Password login Portal Pelanggan telah direset.\n";
+                        $msg .= "Password sementara: {$tempPassword}\n\n";
+                        $msg .= "Silakan login, lalu segera ganti password Anda.";
+                        if (function_exists('getWhatsAppFooter')) {
+                            $msg .= getWhatsAppFooter();
+                        }
+                        $waSent = sendWhatsApp($phone, $msg);
+                        $waStatus = $waSent ? ' Notifikasi WhatsApp terkirim.' : ' Notifikasi WhatsApp gagal terkirim (cek pengaturan gateway).';
+                    }
+
+                    setFlash('success', 'Password portal pelanggan berhasil direset.' . $waStatus);
+                    logActivity('RESET_CUSTOMER_PORTAL_PASSWORD', "ID: {$customerId}");
+                } else {
+                    setFlash('error', 'Gagal reset password portal pelanggan');
+                }
+                redirect('customers.php');
+                break;
         }
     }
 }
@@ -502,6 +534,14 @@ ob_start();
                         <button class="btn btn-secondary btn-sm" onclick="editCustomer(<?php echo htmlspecialchars(json_encode($c)); ?>)" title="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
+                        <form method="POST" style="display: inline;" onsubmit="return confirm('Reset password portal pelanggan ini menjadi 1234?');">
+                            <input type="hidden" name="action" value="reset_portal_password">
+                            <input type="hidden" name="customer_id" value="<?php echo $c['id']; ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
+                            <button type="submit" class="btn btn-secondary btn-sm" title="Reset Password Portal">
+                                <i class="fas fa-key"></i>
+                            </button>
+                        </form>
                         <form method="POST" style="display: inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pelanggan ini? Data yang dihapus tidak dapat dikembalikan.');">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="customer_id" value="<?php echo $c['id']; ?>">
