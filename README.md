@@ -168,9 +168,20 @@ To enable automated features, set up cron jobs on your server:
 
 ### Linux/CPanel
 ```bash
-# Run scheduler every 5 minutes
+# Recommended: run scheduler every 5 minutes
 */5 * * * * /usr/bin/php /path/to/your/gembok-simple/cron/scheduler.php
+
+# If your hosting uses MultiPHP (ea-phpXX), use the PHP binary assigned to your domain (MultiPHP Manager)
+# Example:
+# */5 * * * * /usr/local/bin/ea-php81 /home/USERNAME/public_html/gembok-simple/cron/scheduler.php
 ```
+
+### Web Cron (Alternative)
+If your hosting cannot run PHP CLI cron, you can call the web runner with a token:
+```text
+*/5 * * * * https://your-domain.com/cron/run.php?token=YOUR_CRON_TOKEN
+```
+For security, prefer CLI cron when possible and keep the token private.
 
 ### Windows (Task Scheduler)
 - Create scheduled task
