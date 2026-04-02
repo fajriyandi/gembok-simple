@@ -66,7 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'timezone' => sanitize($_POST['timezone']),
                     'currency' => sanitize($_POST['currency']),
                     'invoice_prefix' => sanitize($_POST['invoice_prefix']),
-                    'invoice_start' => (int)$_POST['invoice_start']
+                    'invoice_start' => (int)$_POST['invoice_start'],
+                    'invoice_manager_name' => sanitize($_POST['invoice_manager_name'] ?? '')
                 ];
                 
                 foreach ($systemSettings as $key => $value) {
@@ -588,6 +589,11 @@ ob_start();
                 <label class="form-label">Invoice Start Number</label>
                 <input type="number" name="invoice_start" class="form-control" value="<?php echo (int)($settings['invoice_start'] ?? 1); ?>">
             </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Nama Manager (Tanda Tangan Invoice)</label>
+            <input type="text" name="invoice_manager_name" class="form-control" value="<?php echo htmlspecialchars($settings['invoice_manager_name'] ?? ''); ?>" placeholder="Nama Manager">
         </div>
         
         <button type="submit" class="btn btn-primary">

@@ -432,10 +432,17 @@ ob_start();
                                     </button>
                                 </form>
                             <?php endif; ?>
-                            
-                            <button class="btn btn-secondary btn-sm" onclick="sendWhatsApp('<?php echo htmlspecialchars($inv['phone']); ?>', '<?php echo htmlspecialchars($inv['invoice_number']); ?>', '<?php echo htmlspecialchars(formatCurrency($inv['amount'])); ?>')" title="Kirim WA">
-                                <i class="fab fa-whatsapp"></i>
-                            </button>
+
+                            <?php if ($inv['status'] === 'paid'): ?>
+                                <a class="btn btn-secondary btn-sm" href="print_invoice.php?ids=<?php echo (int) $inv['id']; ?>" target="_blank" title="Print Invoice">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                                <span class="badge badge-success" style="align-self: center;">Lunas</span>
+                            <?php else: ?>
+                                <button class="btn btn-secondary btn-sm" onclick="sendWhatsApp('<?php echo htmlspecialchars($inv['phone']); ?>', '<?php echo htmlspecialchars($inv['invoice_number']); ?>', '<?php echo htmlspecialchars(formatCurrency($inv['amount'])); ?>')" title="Kirim WA">
+                                    <i class="fab fa-whatsapp"></i>
+                                </button>
+                            <?php endif; ?>
                         </div>
                     </td>
                 </tr>
@@ -596,6 +603,29 @@ function sendWhatsApp(phone, invoiceNumber, amount) {
     const message = `Halo,\n\nBerikut adalah informasi tagihan internet Anda:\n\nInvoice: ${invoiceNumber}\nJumlah: ${amount}\n\nMohon lakukan pembayaran sebelum jatuh tempo.\n\nTerima kasih.`;
     
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+}
+
+const searchInput = document.getElementById('searchInvoice');
+if (searchInput) {
+    const rows = document.querySelectorAll('#invoiceTable tbody tr');
+    const applyFilter = () => {
+        const q = searchInput.value.toLowerCase();
+        rows.forEach(row => {
+            if (!q) {
+                row.style.display = '';
+                return;
+            }
+            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    };
+    searchInput.addEventListener('input', applyFilter);
+
+    const params = new URLSearchParams(window.location.search);
+    const preset = params.get('q') || params.get('invoice') || '';
+    if (preset) {
+        searchInput.value = preset;
+        applyFilter();
+    }
 }
 
 // Close modals on outside click
