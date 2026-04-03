@@ -106,6 +106,17 @@ if ($device) {
     $ssid = getDeviceVal($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID') ?? '-';
     $wifiPass = getDeviceVal($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.PreSharedKey.1.KeyPassphrase') ?? '***';
     $assocDevices = getDeviceVal($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations') ?? '0';
+    $ssid5g = getDeviceVal($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.SSID') ??
+              getDeviceVal($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.6.SSID') ??
+              getDeviceVal($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.7.SSID') ??
+              getDeviceVal($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.8.SSID') ??
+              getDeviceVal($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.9.SSID');
+    $wifiPass5g = getDeviceVal($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.PreSharedKey.1.KeyPassphrase') ??
+                  getDeviceVal($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.6.PreSharedKey.1.KeyPassphrase') ??
+                  getDeviceVal($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.7.PreSharedKey.1.KeyPassphrase') ??
+                  getDeviceVal($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.8.PreSharedKey.1.KeyPassphrase') ??
+                  getDeviceVal($device, 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.9.PreSharedKey.1.KeyPassphrase');
+    $has5g = $ssid5g !== null || $wifiPass5g !== null;
 
     // IP
     $wanIp = getDeviceVal($device, 'VirtualParameters.IPTR069') ?? 
@@ -355,10 +366,22 @@ if ($device) {
                         <span class="info-label">SSID</span>
                         <span class="info-value"><?php echo htmlspecialchars($ssid); ?></span>
                     </div>
+                    <?php if ($has5g): ?>
+                    <div class="info-item">
+                        <span class="info-label">SSID 5G</span>
+                        <span class="info-value"><?php echo htmlspecialchars($ssid5g ?: '-'); ?></span>
+                    </div>
+                    <?php endif; ?>
                     <div class="info-item">
                         <span class="info-label">Password</span>
                         <span class="info-value" style="font-family: monospace;"><?php echo htmlspecialchars($wifiPass); ?></span>
                     </div>
+                    <?php if ($has5g): ?>
+                    <div class="info-item">
+                        <span class="info-label">Password 5G</span>
+                        <span class="info-value" style="font-family: monospace;"><?php echo htmlspecialchars($wifiPass5g ?: '***'); ?></span>
+                    </div>
+                    <?php endif; ?>
                     <div class="info-item">
                         <span class="info-label">Perangkat Terhubung</span>
                         <span class="info-value"><?php echo htmlspecialchars($assocDevices); ?> User</span>
@@ -383,6 +406,17 @@ if ($device) {
                             </button>
                         </div>
                     </div>
+                    <?php if ($has5g): ?>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label class="form-label">SSID 5G</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="editSsid5g" class="form-control" value="<?php echo htmlspecialchars($ssid5g ?: ''); ?>" placeholder="Otomatis: SSID + 5G">
+                            <button class="btn btn-primary" style="width: auto; padding: 10px 15px; margin: 0;" onclick="saveSsid5g()" title="Simpan SSID 5G">
+                                <i class="fas fa-save"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <?php endif; ?>
 
                     <div class="form-group" style="margin-bottom: 20px;">
                         <label class="form-label">Password</label>
@@ -398,6 +432,18 @@ if ($device) {
                         </div>
                         <small style="color: var(--text-secondary); font-size: 0.8rem;">Minimal 8 karakter</small>
                     </div>
+                    <?php if ($has5g): ?>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label class="form-label">Password 5G</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="editPassword5g" class="form-control" value="<?php echo htmlspecialchars($wifiPass5g ?: ''); ?>" style="flex: 1;">
+                            <button class="btn btn-primary" style="width: auto; padding: 10px 15px; margin: 0;" onclick="savePassword5g()" title="Simpan Password 5G">
+                                <i class="fas fa-save"></i>
+                            </button>
+                        </div>
+                        <small style="color: var(--text-secondary); font-size: 0.8rem;">Minimal 8 karakter</small>
+                    </div>
+                    <?php endif; ?>
 
                     <div style="text-align: right; margin-top: 15px;">
                         <button class="btn btn-secondary" style="width: auto; display: inline-block;" onclick="closeWifiModal()">Tutup</button>
@@ -498,6 +544,39 @@ if ($device) {
             });
         }
 
+        function saveSsid5g() {
+            const input = document.getElementById('editSsid5g');
+            const base = input ? input.value : '';
+            const fallback = document.getElementById('editSsid').value || '';
+            const ssid = (base && base.length >= 3) ? base : fallback;
+            if (ssid.length < 3) {
+                alert('SSID 5G minimal 3 karakter');
+                return;
+            }
+            if(!confirm('Simpan perubahan SSID 5G? Perangkat mungkin akan reconnect.')) return;
+            fetch('../../api/onu_wifi.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pppoe_username: '<?php echo $customer['pppoe_username']; ?>',
+                    ssid_5g: ssid
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    alert('SSID 5G berhasil diperbarui!');
+                    location.reload();
+                } else {
+                    alert('Gagal: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Terjadi kesalahan koneksi');
+                console.error(error);
+            });
+        }
+
         function savePassword() {
             const password = document.getElementById('editPassword').value;
 
@@ -520,6 +599,37 @@ if ($device) {
             .then(data => {
                 if(data.success) {
                     alert('Password berhasil diperbarui!');
+                    location.reload();
+                } else {
+                    alert('Gagal: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Terjadi kesalahan koneksi');
+                console.error(error);
+            });
+        }
+
+        function savePassword5g() {
+            const input = document.getElementById('editPassword5g');
+            const password = input ? input.value : '';
+            if (password.length < 8) {
+                alert('Password 5G minimal 8 karakter');
+                return;
+            }
+            if(!confirm('Simpan perubahan Password 5G? Perangkat mungkin akan reconnect.')) return;
+            fetch('../../api/onu_wifi.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pppoe_username: '<?php echo $customer['pppoe_username']; ?>',
+                    password_5g: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    alert('Password 5G berhasil diperbarui!');
                     location.reload();
                 } else {
                     alert('Gagal: ' + data.message);
