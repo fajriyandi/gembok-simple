@@ -257,6 +257,8 @@ ob_start();
             <i class="fas fa-wifi"></i> Pengaturan WiFi
         </h3>
         
+        <?php $has5g = (bool) ($onuData['has_5g'] ?? false); ?>
+        
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
             <div style="display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
@@ -270,10 +272,25 @@ ob_start();
                         <input type="text" id="wifiSsid" class="form-control" 
                                placeholder="Masukkan SSID baru">
                     </div>
+                    <?php if ($has5g): ?>
+                    <div class="form-group">
+                        <label class="form-label">SSID 5G Saat Ini</label>
+                        <input type="text" class="form-control" value="<?php echo htmlspecialchars($onuData['ssid_5g'] ?? ''); ?>" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">SSID 5G Baru</label>
+                        <input type="text" id="wifiSsid5g" class="form-control" placeholder="Otomatis: SSID + 5G">
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <button class="btn btn-primary" onclick="updateSsid()" style="align-self: flex-start; margin-top: auto;">
                     <i class="fas fa-save"></i> Simpan SSID
                 </button>
+                <?php if ($has5g): ?>
+                <button class="btn btn-primary" onclick="updateSsid5g()" style="align-self: flex-start; margin-top: 10px;">
+                    <i class="fas fa-save"></i> Simpan SSID 5G
+                </button>
+                <?php endif; ?>
             </div>
             
             <div style="display: flex; flex-direction: column; justify-content: space-between;">
@@ -288,10 +305,25 @@ ob_start();
                         <input type="password" id="wifiPassword" class="form-control" 
                                placeholder="Masukkan password baru">
                     </div>
+                    <?php if ($has5g): ?>
+                    <div class="form-group">
+                        <label class="form-label">Password 5G Saat Ini</label>
+                        <input type="password" class="form-control" value="<?php echo htmlspecialchars($onuData['wifi_password_5g'] ?? ''); ?>" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password 5G Baru</label>
+                        <input type="password" id="wifiPassword5g" class="form-control" placeholder="Masukkan password baru">
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <button class="btn btn-primary" onclick="updatePassword()" style="align-self: flex-start; margin-top: auto;">
                     <i class="fas fa-save"></i> Simpan Password
                 </button>
+                <?php if ($has5g): ?>
+                <button class="btn btn-primary" onclick="updatePassword5g()" style="align-self: flex-start; margin-top: 10px;">
+                    <i class="fas fa-save"></i> Simpan Password 5G
+                </button>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -439,6 +471,32 @@ function updateSsid() {
     });
 }
 
+function updateSsid5g() {
+    const base = document.getElementById('wifiSsid5g') ? document.getElementById('wifiSsid5g').value : '';
+    const ssid = base && base.length >= 3 ? base : (document.getElementById('wifiSsid').value || '');
+    if (ssid.length < 3) {
+        showAlert('SSID 5G minimal 3 karakter', 'error');
+        return;
+    }
+    fetch('<?php echo APP_URL; ?>/api/onu_wifi.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': apiCsrfToken },
+        body: JSON.stringify({
+            pppoe_username: customerPppoeUsername,
+            ssid_5g: ssid,
+            csrf_token: apiCsrfToken
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('SSID 5G berhasil diperbarui');
+        } else {
+            showAlert('Gagal memperbarui SSID 5G: ' + data.message, 'error');
+        }
+    });
+}
+
 function updatePassword() {
     const password = document.getElementById('wifiPassword').value;
     
@@ -463,6 +521,32 @@ function updatePassword() {
             document.getElementById('wifiPassword').value = '';
         } else {
             showAlert('Gagal memperbarui password: ' + data.message, 'error');
+        }
+    });
+}
+
+function updatePassword5g() {
+    const password = document.getElementById('wifiPassword5g') ? document.getElementById('wifiPassword5g').value : '';
+    if (password.length < 8) {
+        showAlert('Password 5G minimal 8 karakter', 'error');
+        return;
+    }
+    fetch('<?php echo APP_URL; ?>/api/onu_wifi.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': apiCsrfToken },
+        body: JSON.stringify({
+            pppoe_username: customerPppoeUsername,
+            password_5g: password,
+            csrf_token: apiCsrfToken
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Password 5G berhasil diperbarui');
+            document.getElementById('wifiPassword5g').value = '';
+        } else {
+            showAlert('Gagal memperbarui password 5G: ' + data.message, 'error');
         }
     });
 }
