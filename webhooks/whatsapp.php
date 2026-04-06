@@ -398,28 +398,14 @@ function handleWhatsAppPayInvoice($phone, $invoiceId) {
         sendWhatsAppResponse($phone, "Invoice tidak ditemukan.");
         return;
     }
-    
-    $gateway = getSetting('DEFAULT_PAYMENT_GATEWAY', 'tripay');
-    $result = generatePaymentLink(
-        $invoice['invoice_number'],
-        $invoice['amount'],
-        $invoice['customer_name'] ?? '-',
-        $invoice['customer_phone'] ?? '',
-        $invoice['due_date'],
-        $gateway
-    );
-    
-    if (!($result['success'] ?? false)) {
-        sendWhatsAppResponse($phone, $result['message'] ?? 'Gagal generate payment link.');
-        return;
-    }
-    
+
+    $payUrl = invoicePayUrl((string) $invoice['invoice_number']);
     $message = "Invoice #{$invoice['invoice_number']}\n";
     $message .= "Pelanggan: {$invoice['customer_name']}\n";
     $message .= "Jumlah: " . formatCurrency($invoice['amount']) . "\n";
     $message .= "Jatuh Tempo: " . formatDate($invoice['due_date']) . "\n\n";
     $message .= "Link pembayaran:\n";
-    $message .= $result['link'];
+    $message .= $payUrl;
     
     sendWhatsAppResponse($phone, $message);
 }

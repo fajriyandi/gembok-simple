@@ -68,6 +68,9 @@ try {
 
 function handlePaidInvoice($invoiceNumber, $paymentData) {
     $invoice = fetchOne("SELECT * FROM invoices WHERE invoice_number = ?", [$invoiceNumber]);
+    if (!$invoice) {
+        $invoice = fetchOne("SELECT * FROM invoices WHERE payment_order_id = ? LIMIT 1", [$invoiceNumber]);
+    }
     
     if (!$invoice) {
         if (markPublicVoucherOrderPaid($invoiceNumber, 'midtrans', $paymentData)) {
@@ -84,11 +87,11 @@ function handlePaidInvoice($invoiceNumber, $paymentData) {
         'paid_at' => date('Y-m-d H:i:s'),
         'payment_method' => $paymentData['payment_type'] ?? 'Midtrans',
         'payment_ref' => $paymentData['transaction_id'] ?? ''
-    ], 'invoice_number = ?', [$invoiceNumber]);
+    ], 'id = ?', [(int) $invoice['id']]);
     
-    logActivity('INVOICE_PAID', "Invoice: {$invoiceNumber}");
+    logActivity('INVOICE_PAID', "Invoice: {$invoice['invoice_number']}");
 
-    sendInvoicePaidWhatsapp($invoiceNumber, 'midtrans', $paymentData);
+    sendInvoicePaidWhatsapp((string) $invoice['invoice_number'], 'midtrans', $paymentData);
     
     // Check if customer should be unisolated
     $customer = fetchOne("SELECT * FROM customers WHERE id = ?", [$invoice['customer_id']]);

@@ -190,18 +190,7 @@ function handlePayInvoice($chatId, $data) {
         sendMessage($chatId, "❌ Invoice tidak ditemukan.");
         return;
     }
-    
-    $gateway = getSetting('DEFAULT_PAYMENT_GATEWAY', 'tripay');
-    $payResult = generatePaymentLink(
-        $invoice['invoice_number'],
-        $invoice['amount'],
-        $invoice['customer_name'] ?? '-',
-        $invoice['customer_phone'] ?? '',
-        $invoice['due_date'],
-        $gateway
-    );
-    
-    $paymentLink = ($payResult['success'] ?? false) ? $payResult['link'] : 'Gateway error';
+    $paymentLink = invoicePayUrl((string) $invoice['invoice_number']);
     
     $message = "💳 *Invoice #{$invoice['invoice_number']}*\n\n";
     $message .= "Pelanggan: {$invoice['customer_name']}\n";
