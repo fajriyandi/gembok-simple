@@ -439,7 +439,7 @@ ob_start();
                                 </a>
                                 <span class="badge badge-success" style="align-self: center;">Lunas</span>
                             <?php else: ?>
-                                <button class="btn btn-secondary btn-sm" onclick="sendWhatsApp('<?php echo htmlspecialchars($inv['phone']); ?>', '<?php echo htmlspecialchars($inv['invoice_number']); ?>', '<?php echo htmlspecialchars(formatCurrency($inv['amount'])); ?>', '<?php echo htmlspecialchars(invoicePayUrl((string) $inv['invoice_number'], (float) $inv['amount'], (string) $inv['due_date'])); ?>')" title="Kirim WA">
+                                <button class="btn btn-secondary btn-sm" onclick="sendWhatsApp('<?php echo htmlspecialchars($inv['phone']); ?>', '<?php echo htmlspecialchars($inv['invoice_number']); ?>', '<?php echo htmlspecialchars(formatCurrency($inv['amount'])); ?>', '<?php echo htmlspecialchars(invoicePayUrl((string) $inv['invoice_number'])); ?>')" title="Kirim WA">
                                     <i class="fab fa-whatsapp"></i>
                                 </button>
                             <?php endif; ?>
