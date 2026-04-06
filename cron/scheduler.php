@@ -308,7 +308,7 @@ function sendReminders($pdo)
 
     foreach ($upcomingInvoices as $invoice) {
         $daysUntilDue = (strtotime($invoice['due_date']) - time()) / 86400;
-        $payUrl = invoicePayUrl((string) $invoice['invoice_number'], (float) $invoice['amount'], (string) $invoice['due_date']);
+        $payUrl = invoicePayUrl((string) $invoice['invoice_number']);
 
         $message = "Halo {$invoice['name']},\n\n";
         $message .= "Pengingat: Tagihan internet Anda akan jatuh tempo dalam " . ceil($daysUntilDue) . " hari.\n\n";
