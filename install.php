@@ -568,6 +568,7 @@ function insertDefaultData() {
         ['invoice_prefix', 'INV'],
         ['invoice_start', '1'],
         ['invoice_manager_name', ''],
+        ['INVOICE_PAY_TOKEN', ''],
         ['PUBLIC_VOUCHER_PREFIX', 'VCH-'],
         ['PUBLIC_VOUCHER_LENGTH', '6']
     ];
