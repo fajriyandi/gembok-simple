@@ -173,13 +173,13 @@ function paymentMidtransSnapBaseUrl()
 }
 
 // Generate payment link based on gateway
-function generatePaymentLink($invoiceNumber, $amount, $customerName, $customerPhone, $dueDate, $gateway = 'tripay', $paymentMethod = '') {
+function generatePaymentLink($invoiceNumber, $amount, $customerName, $customerPhone, $dueDate, $gateway = 'tripay', $paymentMethod = '', $orderIdOverride = '') {
     switch ($gateway) {
         case 'tripay':
-            return generateTripayPaymentLink($invoiceNumber, $amount, $customerName, $customerPhone, $dueDate, $paymentMethod);
+            return generateTripayPaymentLink($invoiceNumber, $amount, $customerName, $customerPhone, $dueDate, $paymentMethod, $orderIdOverride);
             
         case 'midtrans':
-            return generateMidtransPaymentLink($invoiceNumber, $amount, $customerName, $customerPhone, $dueDate, $paymentMethod);
+            return generateMidtransPaymentLink($invoiceNumber, $amount, $customerName, $customerPhone, $dueDate, $paymentMethod, $orderIdOverride);
             
         default:
             return [
@@ -191,7 +191,7 @@ function generatePaymentLink($invoiceNumber, $amount, $customerName, $customerPh
 }
 
 // Tripay Payment Link Generator
-function generateTripayPaymentLink($invoiceNumber, $amount, $customerName, $customerPhone, $dueDate, $paymentMethod = '') {
+function generateTripayPaymentLink($invoiceNumber, $amount, $customerName, $customerPhone, $dueDate, $paymentMethod = '', $orderIdOverride = '') {
     $apiKey = trim((string) paymentGetConfig('TRIPAY_API_KEY', ''));
     $merchantCode = trim((string) paymentGetConfig('TRIPAY_MERCHANT_CODE', ''));
     $privateKey = trim((string) paymentGetConfig('TRIPAY_PRIVATE_KEY', ''));
@@ -203,7 +203,7 @@ function generateTripayPaymentLink($invoiceNumber, $amount, $customerName, $cust
         ];
     }
 
-    $merchantRef = (string) $invoiceNumber;
+    $merchantRef = $orderIdOverride !== '' ? (string) $orderIdOverride : (string) $invoiceNumber;
     $amountInt = (int) $amount;
     $method = paymentNormalizeTripayMethod($paymentMethod);
     $expiredTime = time() + (24 * 60 * 60);
@@ -316,7 +316,7 @@ function generateTripayPaymentLink($invoiceNumber, $amount, $customerName, $cust
 }
 
 // Midtrans Payment Link Generator
-function generateMidtransPaymentLink($invoiceNumber, $amount, $customerName, $customerPhone, $dueDate, $paymentMethod = '') {
+function generateMidtransPaymentLink($invoiceNumber, $amount, $customerName, $customerPhone, $dueDate, $paymentMethod = '', $orderIdOverride = '') {
     $serverKey = trim((string) paymentGetConfig('MIDTRANS_API_KEY', ''));
     if ($serverKey === '') {
         return [
@@ -329,7 +329,7 @@ function generateMidtransPaymentLink($invoiceNumber, $amount, $customerName, $cu
     $baseUrl = rtrim(paymentMidtransSnapBaseUrl(), '/');
     $url = $baseUrl . '/snap/v1/transactions';
 
-    $orderId = (string) $invoiceNumber;
+    $orderId = $orderIdOverride !== '' ? (string) $orderIdOverride : (string) $invoiceNumber;
     $amountInt = (int) $amount;
 
     $durationHours = 24;
