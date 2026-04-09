@@ -205,7 +205,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'TRIPAY_MODE' => sanitize($_POST['tripay_mode'] ?? ''),
                     'MIDTRANS_API_KEY' => sanitize($_POST['midtrans_api_key']),
                     'MIDTRANS_MERCHANT_CODE' => sanitize($_POST['midtrans_merchant_code']),
-                    'DEFAULT_PAYMENT_GATEWAY' => sanitize($_POST['default_payment_gateway'])
+                    'DEFAULT_PAYMENT_GATEWAY' => sanitize($_POST['default_payment_gateway']),
+                    'DUITKU_MERCHANT_CODE' => sanitize($_POST['duitku_merchant_code'] ?? ''),
+                    'DUITKU_API_KEY' => sanitize($_POST['duitku_api_key'] ?? ''),
+                    'DUITKU_MODE' => sanitize($_POST['duitku_mode'] ?? 'production'),
+                    'DUITKU_EXPIRY_MINUTES' => (int) ($_POST['duitku_expiry_minutes'] ?? 60),
+                    'XENDIT_SECRET_KEY' => sanitize($_POST['xendit_secret_key'] ?? ''),
+                    'XENDIT_CALLBACK_TOKEN' => sanitize($_POST['xendit_callback_token'] ?? ''),
+                    'XENDIT_INVOICE_DURATION' => (int) ($_POST['xendit_invoice_duration'] ?? 3600)
                 ];
 
                 foreach ($paymentSettings as $key => $value) {
@@ -1116,7 +1123,92 @@ ob_start();
             <select name="default_payment_gateway" class="form-control">
                 <option value="tripay" <?php echo ($settings['DEFAULT_PAYMENT_GATEWAY'] ?? '') === 'tripay' ? 'selected' : ''; ?>>Tripay</option>
                 <option value="midtrans" <?php echo ($settings['DEFAULT_PAYMENT_GATEWAY'] ?? '') === 'midtrans' ? 'selected' : ''; ?>>Midtrans</option>
+                <option value="duitku" <?php echo ($settings['DEFAULT_PAYMENT_GATEWAY'] ?? '') === 'duitku' ? 'selected' : ''; ?>>Duitku</option>
+                <option value="xendit" <?php echo ($settings['DEFAULT_PAYMENT_GATEWAY'] ?? '') === 'xendit' ? 'selected' : ''; ?>>Xendit</option>
             </select>
+        </div>
+
+        <hr style="margin: 30px 0; border-color: var(--border-color);">
+
+        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">Duitku</h4>
+        <div style="background: rgba(0,200,255,0.08); border: 1px solid var(--neon-cyan); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <i class="fas fa-link" style="color: var(--neon-cyan);"></i>
+                <strong style="color: var(--neon-cyan);">URL Callback / Webhook Duitku</strong>
+            </div>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 10px;">
+                Paste URL ini ke pengaturan callback Duitku Anda.
+            </p>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="text" id="duitku_webhook_url" readonly
+                    value="<?php echo APP_URL; ?>/webhooks/duitku.php"
+                    style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(0,200,255,0.3); color: #fff; border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer;"
+                    onclick="this.select()">
+                <button type="button" onclick="copyWebhookUrl('duitku_webhook_url', this)" style="background: var(--neon-cyan); color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap;">
+                    <i class="fas fa-copy"></i> Salin
+                </button>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label class="form-label">Duitku Merchant Code</label>
+                <input type="text" name="duitku_merchant_code" class="form-control" value="<?php echo htmlspecialchars($settings['DUITKU_MERCHANT_CODE'] ?? ''); ?>" placeholder="DXXXX">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Duitku API Key</label>
+                <input type="password" name="duitku_api_key" class="form-control" value="<?php echo htmlspecialchars($settings['DUITKU_API_KEY'] ?? ''); ?>" placeholder="API Key">
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label class="form-label">Duitku Mode</label>
+                <select name="duitku_mode" class="form-control">
+                    <option value="production" <?php echo (($settings['DUITKU_MODE'] ?? '') !== 'sandbox') ? 'selected' : ''; ?>>Production</option>
+                    <option value="sandbox" <?php echo (($settings['DUITKU_MODE'] ?? '') === 'sandbox') ? 'selected' : ''; ?>>Sandbox</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Duitku Expiry (menit)</label>
+                <input type="number" name="duitku_expiry_minutes" class="form-control" value="<?php echo (int)($settings['DUITKU_EXPIRY_MINUTES'] ?? 60); ?>" min="5">
+            </div>
+        </div>
+
+        <hr style="margin: 30px 0; border-color: var(--border-color);">
+
+        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">Xendit</h4>
+        <div style="background: rgba(0,200,255,0.08); border: 1px solid var(--neon-cyan); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <i class="fas fa-link" style="color: var(--neon-cyan);"></i>
+                <strong style="color: var(--neon-cyan);">URL Callback / Webhook Xendit</strong>
+            </div>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 10px;">
+                Paste URL ini ke Xendit &rarr; Webhooks. Jika memakai callback token, isi juga di bawah.
+            </p>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="text" id="xendit_webhook_url" readonly
+                    value="<?php echo APP_URL; ?>/webhooks/xendit.php"
+                    style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(0,200,255,0.3); color: #fff; border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer;"
+                    onclick="this.select()">
+                <button type="button" onclick="copyWebhookUrl('xendit_webhook_url', this)" style="background: var(--neon-cyan); color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap;">
+                    <i class="fas fa-copy"></i> Salin
+                </button>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label class="form-label">Xendit Secret Key</label>
+                <input type="password" name="xendit_secret_key" class="form-control" value="<?php echo htmlspecialchars($settings['XENDIT_SECRET_KEY'] ?? ''); ?>" placeholder="xnd_...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Xendit Callback Token (opsional)</label>
+                <input type="password" name="xendit_callback_token" class="form-control" value="<?php echo htmlspecialchars($settings['XENDIT_CALLBACK_TOKEN'] ?? ''); ?>" placeholder="token webhooks">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Xendit Invoice Duration (detik)</label>
+            <input type="number" name="xendit_invoice_duration" class="form-control" value="<?php echo (int)($settings['XENDIT_INVOICE_DURATION'] ?? 3600); ?>" min="300">
         </div>
 
         <button type="submit" class="btn btn-primary">
