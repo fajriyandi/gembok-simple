@@ -212,7 +212,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'DUITKU_EXPIRY_MINUTES' => (int) ($_POST['duitku_expiry_minutes'] ?? 60),
                     'XENDIT_SECRET_KEY' => sanitize($_POST['xendit_secret_key'] ?? ''),
                     'XENDIT_CALLBACK_TOKEN' => sanitize($_POST['xendit_callback_token'] ?? ''),
-                    'XENDIT_INVOICE_DURATION' => (int) ($_POST['xendit_invoice_duration'] ?? 3600)
+                    'XENDIT_INVOICE_DURATION' => (int) ($_POST['xendit_invoice_duration'] ?? 3600),
+                    'BKASH_APP_KEY' => sanitize($_POST['bkash_app_key'] ?? ''),
+                    'BKASH_APP_SECRET' => sanitize($_POST['bkash_app_secret'] ?? ''),
+                    'BKASH_USERNAME' => sanitize($_POST['bkash_username'] ?? ''),
+                    'BKASH_PASSWORD' => sanitize($_POST['bkash_password'] ?? ''),
+                    'BKASH_MODE' => sanitize($_POST['bkash_mode'] ?? 'sandbox')
                 ];
 
                 foreach ($paymentSettings as $key => $value) {
@@ -1125,6 +1130,57 @@ ob_start();
                 <option value="midtrans" <?php echo ($settings['DEFAULT_PAYMENT_GATEWAY'] ?? '') === 'midtrans' ? 'selected' : ''; ?>>Midtrans</option>
                 <option value="duitku" <?php echo ($settings['DEFAULT_PAYMENT_GATEWAY'] ?? '') === 'duitku' ? 'selected' : ''; ?>>Duitku</option>
                 <option value="xendit" <?php echo ($settings['DEFAULT_PAYMENT_GATEWAY'] ?? '') === 'xendit' ? 'selected' : ''; ?>>Xendit</option>
+                <option value="bkash" <?php echo ($settings['DEFAULT_PAYMENT_GATEWAY'] ?? '') === 'bkash' ? 'selected' : ''; ?>>bKash</option>
+            </select>
+        </div>
+
+        <hr style="margin: 30px 0; border-color: var(--border-color);">
+
+        <h4 style="margin-bottom: 15px; color: var(--neon-cyan);">bKash</h4>
+        <div style="background: rgba(226,19,110,0.08); border: 1px solid #e2136e; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <i class="fas fa-link" style="color: #e2136e;"></i>
+                <strong style="color: #e2136e;">URL Callback bKash</strong>
+            </div>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 10px;">
+                Masukkan URL ini ke dashboard bKash (jika diperlukan) atau gunakan untuk konfigurasi merchant.
+            </p>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="text" id="bkash_webhook_url" readonly
+                    value="<?php echo APP_URL; ?>/webhooks/bkash.php"
+                    style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(226,19,110,0.3); color: #fff; border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer;"
+                    onclick="this.select()">
+                <button type="button" onclick="copyWebhookUrl('bkash_webhook_url', this)" style="background: #e2136e; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap;">
+                    <i class="fas fa-copy"></i> Salin
+                </button>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label class="form-label">bKash App Key</label>
+                <input type="password" name="bkash_app_key" class="form-control" value="<?php echo htmlspecialchars($settings['BKASH_APP_KEY'] ?? ''); ?>" placeholder="App Key">
+            </div>
+            <div class="form-group">
+                <label class="form-label">bKash App Secret</label>
+                <input type="password" name="bkash_app_secret" class="form-control" value="<?php echo htmlspecialchars($settings['BKASH_APP_SECRET'] ?? ''); ?>" placeholder="App Secret">
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label class="form-label">bKash Username</label>
+                <input type="text" name="bkash_username" class="form-control" value="<?php echo htmlspecialchars($settings['BKASH_USERNAME'] ?? ''); ?>" placeholder="Username">
+            </div>
+            <div class="form-group">
+                <label class="form-label">bKash Password</label>
+                <input type="password" name="bkash_password" class="form-control" value="<?php echo htmlspecialchars($settings['BKASH_PASSWORD'] ?? ''); ?>" placeholder="Password">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">bKash Mode</label>
+            <select name="bkash_mode" class="form-control">
+                <option value="sandbox" <?php echo (($settings['BKASH_MODE'] ?? '') !== 'production') ? 'selected' : ''; ?>>Sandbox</option>
+                <option value="production" <?php echo (($settings['BKASH_MODE'] ?? '') === 'production') ? 'selected' : ''; ?>>Production</option>
             </select>
         </div>
 

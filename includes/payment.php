@@ -190,6 +190,48 @@ function paymentGetXenditApiBaseUrl()
     return rtrim($base, '/');
 }
 
+function paymentGetBkashApiBaseUrl()
+{
+    $mode = strtolower(trim((string) paymentGetConfig('BKASH_MODE', 'sandbox')));
+    return ($mode === 'production') ? 'https://tokenized.pay.bka.sh/v1.2.0-beta' : 'https://tokenized.sandbox.bka.sh/v1.2.0-beta';
+}
+
+function paymentBkashRequest($path, $method, $headers, $payload = null)
+{
+    $baseUrl = paymentGetBkashApiBaseUrl();
+    $url = rtrim($baseUrl, '/') . '/' . ltrim($path, '/');
+    return paymentCurlJson($url, $method, $headers, $payload);
+}
+
+function paymentBkashGetToken()
+{
+    $appKey = trim((string) paymentGetConfig('BKASH_APP_KEY', ''));
+    $appSecret = trim((string) paymentGetConfig('BKASH_APP_SECRET', ''));
+    $username = trim((string) paymentGetConfig('BKASH_USERNAME', ''));
+    $password = trim((string) paymentGetConfig('BKASH_PASSWORD', ''));
+
+    if ($appKey === '' || $appSecret === '' || $username === '' || $password === '') {
+        return ['success' => false, 'message' => 'bKash credentials not configured'];
+    }
+
+    $res = paymentBkashRequest('/tokenized/checkout/token/grant', 'POST', [
+        'Content-Type: application/json',
+        'username: ' . $username,
+        'password: ' . $password
+    ], [
+        'app_key' => $appKey,
+        'app_secret' => $appSecret
+    ]);
+
+    $json = $res['json'];
+    if ((int) $res['http_code'] !== 200 || !is_array($json) || empty($json['id_token'])) {
+        paymentLog('BKASH_GRANT_TOKEN_FAILED', $res);
+        return ['success' => false, 'message' => $json['statusMessage'] ?? 'Failed to get bKash token'];
+    }
+
+    return ['success' => true, 'token' => $json['id_token']];
+}
+
 // Generate payment link based on gateway
 function generatePaymentLink($invoiceNumber, $amount, $customerName, $customerPhone, $dueDate, $gateway = 'tripay', $paymentMethod = '', $orderIdOverride = '') {
     switch ($gateway) {
@@ -204,6 +246,9 @@ function generatePaymentLink($invoiceNumber, $amount, $customerName, $customerPh
 
         case 'xendit':
             return generateXenditPaymentLink($invoiceNumber, $amount, $customerName, $customerPhone, $dueDate, $paymentMethod, $orderIdOverride);
+
+        case 'bkash':
+            return generateBkashPaymentLink($invoiceNumber, $amount, $customerName, $customerPhone, $dueDate, $paymentMethod, $orderIdOverride);
             
         default:
             return [
@@ -386,6 +431,45 @@ function generateXenditPaymentLink($invoiceNumber, $amount, $customerName, $cust
     }
 
     return ['success' => true, 'link' => $paymentUrl, 'data' => $json];
+}
+
+function generateBkashPaymentLink($invoiceNumber, $amount, $customerName, $customerPhone, $dueDate, $paymentMethod = '', $orderIdOverride = '')
+{
+    $tokenRes = paymentBkashGetToken();
+    if (!$tokenRes['success']) {
+        return $tokenRes;
+    }
+    $idToken = $tokenRes['token'];
+    $appKey = trim((string) paymentGetConfig('BKASH_APP_KEY', ''));
+
+    $orderId = $orderIdOverride !== '' ? (string) $orderIdOverride : (string) $invoiceNumber;
+    $amountFormatted = number_format((float) $amount, 2, '.', '');
+
+    $callbackUrl = rtrim(APP_URL, '/') . '/webhooks/bkash.php';
+
+    $payload = [
+        'mode' => '0011',
+        'payerReference' => (string) $customerPhone,
+        'callbackURL' => $callbackUrl,
+        'amount' => $amountFormatted,
+        'currency' => 'BDT',
+        'intent' => 'sale',
+        'merchantInvoiceNumber' => $orderId
+    ];
+
+    $res = paymentBkashRequest('/tokenized/checkout/payment/create', 'POST', [
+        'Content-Type: application/json',
+        'Authorization: ' . $idToken,
+        'X-APP-Key: ' . $appKey
+    ], $payload);
+
+    $json = $res['json'];
+    if ((int) $res['http_code'] !== 200 || !is_array($json) || empty($json['bkashURL'])) {
+        paymentLog('BKASH_CREATE_PAYMENT_FAILED', $res);
+        return ['success' => false, 'message' => $json['statusMessage'] ?? 'Gagal membuat pembayaran bKash'];
+    }
+
+    return ['success' => true, 'link' => $json['bkashURL'], 'data' => $json];
 }
 
 // Tripay Payment Link Generator
@@ -643,6 +727,15 @@ function getPaymentGateways() {
             'description' => 'Payment gateway Indonesia',
             'features' => ['QRIS', 'Virtual Account', 'E-Wallet', 'Retail'],
             'supported_channels' => ['QRIS', 'VA', 'E-Wallet', 'Retail']
+        ],
+        [
+            'id' => 'bkash',
+            'name' => 'bKash',
+            'icon' => 'fa-mobile-alt',
+            'color' => '#e2136e',
+            'description' => 'Payment gateway populer Bangladesh',
+            'features' => ['Mobile Menu', 'App', 'Checkout'],
+            'supported_channels' => ['bKash']
         ]
     ];
 }

@@ -41,6 +41,13 @@ define('TRIPAY_API_KEY', '');
 define('TRIPAY_PRIVATE_KEY', '');
 define('TRIPAY_MERCHANT_CODE', '');
 
+// bKash Configuration
+define('BKASH_APP_KEY', '');
+define('BKASH_APP_SECRET', '');
+define('BKASH_USERNAME', '');
+define('BKASH_PASSWORD', '');
+define('BKASH_MODE', 'sandbox');
+
 // Telegram Configuration
 define('TELEGRAM_BOT_TOKEN', '');
 
