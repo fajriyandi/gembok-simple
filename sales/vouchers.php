@@ -152,6 +152,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = "Voucher Created!\n\n";
                 $message .= "Profile: {$selectedProfile['profile_name']}\n";
                 $message .= "Qty: {$qty}\n";
+                if (!empty($generatedVouchers)) {
+                    $message .= "\nKode Voucher:\n";
+                    foreach ($generatedVouchers as $idx => $v) {
+                        $u = (string) ($v['username'] ?? '');
+                        $p = (string) ($v['password'] ?? '');
+                        if ($u === '' && $p === '') {
+                            continue;
+                        }
+                        $line = $u;
+                        if (($salesUser['voucher_type'] ?? 'upp') === 'up' && $p !== '' && $p !== $u) {
+                            $line .= ' / ' . $p;
+                        }
+                        $message .= ($idx + 1) . ". " . $line . "\n";
+                    }
+                    $message .= "\n";
+                }
                 $message .= "Total Modal: " . formatCurrency($totalCost) . "\n";
                 $message .= "Sisa Saldo: " . formatCurrency($newBalance) . "\n\n";
                 $message .= "Terima kasih.";
